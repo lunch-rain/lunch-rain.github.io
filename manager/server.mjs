@@ -5,6 +5,7 @@ import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import matter from "gray-matter";
 import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
@@ -83,6 +84,20 @@ function dateString(value) {
 	return String(value || "").slice(0, 10);
 }
 
+function windowsProxy() {
+	if (process.platform !== "win32") return "";
+	const key = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
+	try {
+		const enabled = execFileSync("reg.exe", ["query", key, "/v", "ProxyEnable"], { encoding: "utf8", windowsHide: true });
+		if (!/REG_DWORD\s+0x1(?:\s|$)/i.test(enabled)) return "";
+		const setting = execFileSync("reg.exe", ["query", key, "/v", "ProxyServer"], { encoding: "utf8", windowsHide: true });
+		const raw = setting.match(/ProxyServer\s+REG_\w+\s+([^\r\n]+)/i)?.[1]?.trim() || "";
+		const address = raw.includes("=") ? raw.split(";").find(part => /^https?=/i.test(part))?.split("=").slice(1).join("=") : raw;
+		if (!address) return "";
+		return /^[a-z]+:\/\//i.test(address) ? address : `http://${address}`;
+	} catch { return ""; }
+}
+
 async function readPost(id) {
 	const parsed = matter(await readFile(safeId(id), "utf8"));
 	return { id, ...parsed.data, published: dateString(parsed.data.published), updated: dateString(parsed.data.updated), body: parsed.content.trimStart() };
@@ -92,7 +107,12 @@ async function run(command, args, timeout = 180_000, cwd = root) {
 	return new Promise((resolve, reject) => {
 		// Git accepts an argv array directly on Windows. Sending it through cmd.exe
 		// splits a commit message containing spaces into separate pathspecs.
-		const child = spawn(command, args, { cwd, shell: process.platform === "win32" && command === "pnpm", windowsHide: true });
+		const env = { ...process.env };
+		if (!env.HTTPS_PROXY && !env.https_proxy && !env.ALL_PROXY && !env.all_proxy) {
+			const proxy = windowsProxy();
+			if (proxy) { env.HTTPS_PROXY = proxy; env.HTTP_PROXY ||= proxy; }
+		}
+		const child = spawn(command, args, { cwd, env, shell: process.platform === "win32" && command === "pnpm", windowsHide: true });
 		let output = "";
 		const timer = setTimeout(() => child.kill(), timeout);
 		for (const stream of [child.stdout, child.stderr]) stream.on("data", chunk => { output = (output + chunk.toString()).slice(-12000); });
@@ -106,6 +126,17 @@ async function run(command, args, timeout = 180_000, cwd = root) {
 }
 
 async function git(...args) { return run("git", args, 120_000); }
+
+async function pushWithRetry(args, cwd = root) {
+	for (let attempt = 1; attempt <= 3; attempt++) {
+		try { return await run("git", ["push", ...args], 120_000, cwd); }
+		catch (error) {
+			if (!/Failed to connect|Could not resolve host|Connection timed out|Connection reset|unable to access|HTTP\/2 stream|TLS connection/i.test(error.message)) throw error;
+			if (attempt === 3) throw new Error(`GitHub 网络连接失败，已重试 3 次。请确认系统代理正在运行后再次点击发布。\n${error.message}`);
+			await new Promise(resolve => setTimeout(resolve, attempt * 2000));
+		}
+	}
+}
 
 const defaultDeployConfig = { staticRepoUrl: gitRemote, staticBranch: "gh-pages", sourceRepoUrl: gitRemote, sourceBranch: "main" };
 
@@ -141,7 +172,7 @@ async function publishSource() {
 		await git("commit", "-m", `content: update blog ${new Date().toISOString().slice(0, 10)}`);
 		logs.push("本地修改已提交");
 	} else logs.push("没有新的本地修改");
-	await git("push", config.sourceRepoUrl, `HEAD:${config.sourceBranch}`);
+	await pushWithRetry([config.sourceRepoUrl, `HEAD:${config.sourceBranch}`]);
 	logs.push(`源码已推送到 ${config.sourceBranch}。若 Vercel 已连接此仓库和分支，将自动开始构建。`);
 	return logs.join("\n");
 }
@@ -167,7 +198,7 @@ async function publishPages() {
 		await pagesGit("add", "-A");
 		if ((await pagesGit("status", "--porcelain")).trim()) {
 			await pagesGit("commit", "-m", `Publish blog ${new Date().toISOString().slice(0, 10)}`);
-			await pagesGit("push", "origin", `HEAD:${config.staticBranch}`);
+			await pushWithRetry(["origin", `HEAD:${config.staticBranch}`], temporary);
 			return `静态页已上传到 ${config.staticBranch}。请在 GitHub 仓库的 Pages 设置中选择从此分支部署。`;
 		}
 		return `静态页没有变化；${config.staticBranch} 已是最新。`;
