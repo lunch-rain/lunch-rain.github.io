@@ -1,0 +1,71 @@
+---
+import { getCollection } from "astro:content";
+import Realm from "@/components/pages/tree/Realm.svelte";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { getPostUrlBySlug } from "@/utils/url-utils";
+
+const posts = await getCollection("posts", ({ data }) => !data.draft);
+const dynamics = await getCollection("dynamic");
+
+const cleanExcerpt = (value: string) =>
+	value
+		.replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+		.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+		.replace(/[#>*_`~|]/g, "")
+		.replace(/\s+/g, " ")
+		.trim()
+		.slice(0, 150);
+
+const entries = [
+	...posts.map((entry) => {
+		const kind = /随笔|杂谈|chatter/i.test(entry.data.category || "")
+			? "chatter"
+			: "post";
+		return {
+			id: `post-${entry.id}`,
+			title: entry.data.title,
+			excerpt: entry.data.description || cleanExcerpt(entry.body || ""),
+			date: entry.data.published.toISOString().slice(0, 10),
+			kind,
+			href: getPostUrlBySlug(entry.id),
+			image: entry.data.image || "",
+		};
+	}),
+	...dynamics.map((entry) => {
+		const excerpt = cleanExcerpt(entry.body || "");
+		return {
+			id: `dynamic-${entry.id}`,
+			title: excerpt.slice(0, 28) || "一段动态",
+			excerpt,
+			date: entry.data.published.toISOString().slice(0, 10),
+			kind: "moment",
+			href: "/dynamic/",
+			image: "",
+		};
+	}),
+].sort((a, b) => b.date.localeCompare(a.date));
+---
+
+<MainGridLayout title="灵境" description="让文章、随笔与瞬间汇成一座记忆工坊。">
+	<Realm client:load {entries} />
+</MainGridLayout>
+
+<style is:global>
+  body:has(.realm) #canvas_sakura { display: none !important; }
+	body:has(.realm) #main-grid {
+		grid-template-columns: minmax(0, 1fr) !important;
+	}
+	body:has(.realm) #main-grid > #left-sidebar-wrapper,
+	body:has(.realm) #main-grid > #left-sidebar-dynamic,
+	body:has(.realm) #main-grid > #right-sidebar-static,
+	body:has(.realm) #main-grid > #right-sidebar-dynamic {
+		display: none !important;
+	}
+	body:has(.realm) #main-grid > #content-column {
+		grid-column: 1 / -1 !important;
+		max-width: none !important;
+	}
+	body:has(.realm) #category-bar-wrapper {
+		display: none;
+	}
+</style>

@@ -56,6 +56,8 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 		url: "#",
 		icon: "material-symbols:person",
 		children: [
+			// 灵境
+			LinkPresets.Realm,
 			// 动态
 			LinkPresets.Dynamic,
 
@@ -125,6 +127,11 @@ export const navBarSearchConfig: NavBarSearchConfig = {
 // Link Presets - Allows free customization of the name, icon, and URL of navigation bar links
 // ============================================================================
 export const LinkPresets: Record<string, NavBarLink> = {
+	Realm: {
+		name: "灵境",
+		url: "/tree/",
+		icon: "material-symbols:forest-rounded",
+	},
 	Home: {
 		name: "主页",
 		url: "/",
