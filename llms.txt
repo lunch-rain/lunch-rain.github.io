@@ -1,0 +1,9 @@
+﻿# lunch-rain 的博客
+> lunch-rain 的个人博客，记录生活、学习与灵感。
+
+## Key Pages
+- [主页](https://lunch-rain.github.io/)
+- [归档](https://lunch-rain.github.io/archive/)
+- [关于我](https://lunch-rain.github.io/about/)
+
+## Recent Posts

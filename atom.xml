@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>https://lunch-rain.github.io/</id>
+  <title type="text">lunch-rain 的博客</title>
+  <subtitle type="text">记录生活与灵感</subtitle>
+  <updated>2026-09-24T08:00:01.793Z</updated>
+  <author><name>lunch-rain</name></author>
+  <link rel="alternate" href="https://lunch-rain.github.io/"/>
+  <link rel="self" href="https://lunch-rain.github.io/atom.xml"/>
+  <generator uri="https://github.com/CuteLeaf/Firefly">Firefly v6.16.8</generator>
+
+</feed>
