@@ -12,33 +12,33 @@ const pages = resolvePageToggles({
 	// ── 社交 (Social) ──────────────────────────────────
 
 	// 友链页面开关
-		friends: false,
+		friends: true,
 	// 留言板页面开关，需要配置评论系统
-		guestbook: false,
+		guestbook: true,
 
 	// ── 我的 (My) ──────────────────────────────────
 
 	// 动态页面开关
-		dynamic: false,
+		dynamic: true,
 	// 项目展示页开关
-		projects: false,
+		projects: true,
 	// 相册页面开关
-		gallery: false,
+		gallery: true,
 	// 书签导航页面开关
-		booknav: false,
+		booknav: true,
 	// 哔哩哔哩追番页面开关
-	bilibili: false,
+	bilibili: true,
 	// 番组计划页面开关
-	bangumi: false,
+		bangumi: true,
 	// VNDB页面开关
-	vndb: false,
+		vndb: true,
 	// MyAnimeList页面开关
-	mal: false,
+		mal: true,
 
 	// ── 关于 (About) ──────────────────────────────────
 
 	// 打赏页面开关
-		sponsor: false,
+		sponsor: true,
 });
 
 export const siteConfig: SiteConfig = {
@@ -262,13 +262,13 @@ export const siteConfig: SiteConfig = {
 	// ── Bilibili配置 ──────────────────────────────────
 	bilibili: {
 		// 你的 Bilibili 用户 UID
-		uid: "38932988",
+		uid: "",
 	},
 
 	// ── 番组计划bangumi配置 ──────────────────────────────────
 	bangumi: {
 		// Bangumi用户ID
-		userId: "1143164",
+		userId: "",
 		// 数据模式：static=构建时获取，dynamic=客户端实时获取
 		// static 模式在构建时获取数据并静态渲染，部署后数据不更新
 		// dynamic 模式在浏览器中实时请求 API，始终显示最新数据
@@ -292,7 +292,7 @@ export const siteConfig: SiteConfig = {
 	// ── VNDB配置 ──────────────────────────────────
 	vndb: {
 		// VNDB 用户 ID
-		userId: "u358128",
+		userId: "",
 		// 数据模式：static=构建时获取，dynamic=客户端实时获取
 		// static 模式在构建时获取数据并静态渲染，部署后数据不更新
 		// dynamic 模式在浏览器中实时请求 API，始终显示最新数据
@@ -312,9 +312,9 @@ export const siteConfig: SiteConfig = {
 	// ── MyAnimeList配置 ──────────────────────────────────
 	mal: {
 		// MyAnimeList 用户名（列表需为公开状态，私密列表无法读取）
-		username: "cuteleaf",
+		username: "",
 		// MyAnimeList Client ID，在 https://myanimelist.net/apiconfig 注册免费应用后获取
-		clientId: "	0ef34371450f9c6c809deaadec6aa8f3",
+		clientId: "",
 		// MAL API 地址
 		apiUrl: "https://api.myanimelist.net/v2",
 		// 动画条目详情页地址，末尾需要带 /

@@ -31,12 +31,6 @@
       "icon": "fa7-solid:atom",
       "url": "/atom/",
       "showName": false
-    },
-    {
-      "name": "哔哩哔哩",
-      "icon": "fa7-brands:bilibili",
-      "url": "https://space.bilibili.com/484641873",
-      "showName": false
     }
   ]
 }
