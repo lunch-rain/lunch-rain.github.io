@@ -22,19 +22,24 @@ function withBase(assetPath: string): string {
  * 扫描相册目录中的所有图片文件
  */
 export function scanAlbumPhotos(albumId: string): string[] {
-	const dir = path.join(process.cwd(), "public", "gallery", albumId);
+	const isUploads = albumId === "uploads";
+	const dir = isUploads ? path.join(process.cwd(), "public", "uploads") : path.join(process.cwd(), "public", "gallery", albumId);
 	if (!fs.existsSync(dir)) return [];
-	const files = fs
-		.readdirSync(dir)
-		.filter((f) => /\.(jpe?g|png|webp|avif|gif)$/i.test(f))
-		.sort();
+	function collect(directory: string, prefix = ""): string[] {
+		return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+			const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+			if (entry.isDirectory() && isUploads) return collect(path.join(directory, entry.name), relative);
+			return entry.isFile() && /\.(jpe?g|png|webp|avif|gif)$/i.test(entry.name) ? [relative] : [];
+		});
+	}
+	const files = collect(dir).sort();
 	// 将 cover.* 排到第一位
 	const coverIdx = files.findIndex((f) => /^cover\./i.test(f));
 	if (coverIdx > 0) {
 		const [coverFile] = files.splice(coverIdx, 1);
 		files.unshift(coverFile);
 	}
-	const localPhotos = files.map((f) => withBase(`/gallery/${albumId}/${f}`));
+	const localPhotos = files.map((f) => withBase(`/${isUploads ? "uploads" : `gallery/${albumId}`}/${f.split("/").map(encodeURIComponent).join("/")}`));
 
 	// 读取 urls.txt 中的远程图片 URL
 	const urlsFile = path.join(dir, "urls.txt");

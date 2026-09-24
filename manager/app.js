@@ -10,6 +10,7 @@ let lastUpload = "";
 let files = [];
 let activeFile = "";
 let currentImageFolder = "";
+let currentAlbumId = "";
 const linkPresets = {
 	GitHub: { icon: "fa7-brands:github", url: "https://github.com/lunch-rain" },
 	邮箱: { icon: "fa7-solid:envelope", url: "mailto:" },
@@ -85,12 +86,13 @@ function toast(message) {
 function view(name) {
 	document.querySelectorAll(".view").forEach(element => element.classList.toggle("active", element.id === name));
 	document.querySelectorAll(".nav-item").forEach(element => element.classList.toggle("active", element.dataset.view === name || (name === "editor" && element.dataset.view === "posts")));
-	const titles = { dashboard: ["早上好，RainLove ☀", "写下新的故事，整理你的灵感。"], posts: ["文章工作台", "在这里管理所有 Firefly 文章。"], images: ["图片工作台", "上传、预览并整理博客图片。"], editor: ["专注写作", "把灵感变成一篇文章。"], settings: ["我的博客", "让博客呈现你的风格。"], files: ["全部内容与配置", "每个文件都可以在这里找到。"], publish: ["准备发布", "把修改带到线上。"] };
+	const titles = { dashboard: ["早上好，RainLove ☀", "写下新的故事，整理你的灵感。"], posts: ["文章工作台", "在这里管理所有 Firefly 文章。"], images: ["图片工作台", "上传、预览并整理博客图片。"], albums: ["相册工作台", "管理博客相册中的图片。"], editor: ["专注写作", "把灵感变成一篇文章。"], settings: ["我的博客", "让博客呈现你的风格。"], files: ["全部内容与配置", "每个文件都可以在这里找到。"], publish: ["准备发布", "把修改带到线上。"] };
 	$("#page-title").textContent = titles[name][0];
 	$("#page-subtitle").textContent = titles[name][1];
 	window.scrollTo(0, 0);
 	if (name === "files") loadFileList().catch(error => toast(error.message));
 	if (name === "images") loadImageLibrary().catch(error => toast(error.message));
+	if (name === "albums") loadAlbums().catch(error => toast(error.message));
 }
 
 async function loadImageLibrary() {
@@ -113,12 +115,25 @@ async function loadImageLibrary() {
 	const folderList = $("#image-folders");
 	folderList.replaceChildren();
 	for (const folder of result.folders) {
+		const wrapper = document.createElement("div");
+		wrapper.className = "image-folder-row";
 		const button = document.createElement("button");
 		button.type = "button";
 		button.className = "image-folder";
 		button.textContent = `📁 ${folder.name}`;
 		button.onclick = () => { currentImageFolder = folder.path; loadImageLibrary().catch(error => toast(error.message)); };
-		folderList.append(button);
+		const remove = document.createElement("button");
+		remove.type = "button";
+		remove.className = "danger ghost";
+		remove.textContent = "删除";
+		remove.title = `删除文件夹“${folder.name}”及其中所有图片`;
+		remove.onclick = async () => {
+			if (!confirm(`确定删除文件夹“${folder.name}”及其中所有图片吗？`)) return;
+			try { await api("/api/images/folder/delete", { folder: folder.path }); await loadImageLibrary(); toast("文件夹已删除。"); }
+			catch (error) { toast(error.message); }
+		};
+		wrapper.append(button, remove);
+		folderList.append(wrapper);
 	}
 	const grid = $("#image-grid");
 	grid.replaceChildren();
@@ -143,7 +158,19 @@ async function loadImageLibrary() {
 			try { await navigator.clipboard.writeText(decodeURI(item.url)); toast(`已复制：${decodeURI(item.url)}`); }
 			catch { toast(`图片路径：${decodeURI(item.url)}`); }
 		};
-		caption.append(name, size, copy);
+		const remove = document.createElement("button");
+		remove.type = "button";
+		remove.className = "danger ghost";
+		remove.textContent = "删除";
+		remove.onclick = async () => {
+			if (!confirm(`确定删除图片“${item.name}”吗？`)) return;
+			try { await api("/api/images/delete", { folder: currentImageFolder, name: item.name }); await loadImageLibrary(); toast("图片已删除。"); }
+			catch (error) { toast(error.message); }
+		};
+		const actions = document.createElement("div");
+		actions.className = "image-card-actions";
+		actions.append(copy, remove);
+		caption.append(name, size, actions);
 		card.append(img, caption);
 		grid.append(card);
 	}
@@ -187,6 +214,115 @@ const imageDropzone = $("#image-dropzone");
 imageDropzone.ondragover = event => { event.preventDefault(); imageDropzone.classList.add("drag-over"); };
 imageDropzone.ondragleave = () => imageDropzone.classList.remove("drag-over");
 imageDropzone.ondrop = event => { event.preventDefault(); imageDropzone.classList.remove("drag-over"); uploadLibraryImages(event.dataTransfer.files).catch(error => toast(error.message)); };
+
+async function loadAlbums() {
+	const result = await api("/api/albums");
+	const selected = result.albums.find(album => album.id === currentAlbumId);
+	if (currentAlbumId && !selected) currentAlbumId = "";
+	$("#album-back").hidden = !currentAlbumId;
+	$("#album-delete").hidden = !currentAlbumId || currentAlbumId === "uploads";
+	$("#album-manage-library").hidden = currentAlbumId !== "uploads";
+	$("#album-upload-button").hidden = !currentAlbumId || currentAlbumId === "uploads";
+	$("#album-editor").hidden = !currentAlbumId;
+	$("#album-heading").textContent = selected ? selected.name : "全部相册";
+	$("#album-count").textContent = selected ? `${selected.count} 张图片` : `${result.albums.length} 个相册`;
+	if (selected) {
+		for (const key of ["name", "date", "description", "location", "cover", "password", "passwordHint"]) $("#album-" + key.replace(/[A-Z]/g, letter => "-" + letter.toLowerCase())).value = selected[key] || "";
+		$("#album-tags").value = (selected.tags || []).join(", ");
+	}
+	const list = $("#album-list");
+	const grid = $("#album-images");
+	list.replaceChildren();
+	grid.replaceChildren();
+	$("#album-empty").hidden = true;
+	if (!currentAlbumId) {
+		for (const album of result.albums) {
+			const button = document.createElement("button");
+			button.type = "button";
+			button.className = "image-folder album-tile";
+			const title = document.createElement("strong");
+			title.textContent = `▣ ${album.name}`;
+			const details = document.createElement("small");
+			details.textContent = `${album.count} 张图片${album.id === "uploads" ? " · 自动展示图片库" : ""}`;
+			button.append(title, details);
+			button.onclick = () => { currentAlbumId = album.id; loadAlbums().catch(error => toast(error.message)); };
+			list.append(button);
+		}
+		return;
+	}
+	if (currentAlbumId === "uploads") return;
+	const { images } = await api(`/api/albums/images?id=${encodeURIComponent(currentAlbumId)}`);
+	$("#album-empty").hidden = images.length > 0;
+	for (const item of images) {
+		const card = document.createElement("article");
+		card.className = "image-card";
+		const img = document.createElement("img");
+		img.src = item.url;
+		img.alt = item.name;
+		const caption = document.createElement("div");
+		const name = document.createElement("strong");
+		name.textContent = item.name;
+		const actions = document.createElement("div");
+		actions.className = "image-card-actions";
+		const copy = document.createElement("button");
+		copy.className = "secondary";
+		copy.textContent = "复制路径";
+		copy.onclick = () => navigator.clipboard.writeText(item.url).then(() => toast("路径已复制。"), () => toast(item.url));
+		const remove = document.createElement("button");
+		remove.className = "danger ghost";
+		remove.textContent = "删除";
+		remove.onclick = async () => {
+			if (!confirm(`确定删除图片“${item.name}”吗？`)) return;
+			try { await api("/api/albums/image/delete", { id: currentAlbumId, name: item.name }); await loadAlbums(); toast("图片已删除。"); }
+			catch (error) { toast(error.message); }
+		};
+		actions.append(copy, remove);
+		caption.append(name, actions);
+		card.append(img, caption);
+		grid.append(card);
+	}
+}
+
+$("#album-back").onclick = () => { currentAlbumId = ""; loadAlbums().catch(error => toast(error.message)); };
+$("#album-manage-library").onclick = () => { currentImageFolder = ""; view("images"); };
+$("#album-save").onclick = async () => {
+	const data = { id: currentAlbumId };
+	for (const key of ["name", "date", "description", "location", "cover", "password", "passwordHint", "tags"]) data[key] = $("#album-" + key.replace(/[A-Z]/g, letter => "-" + letter.toLowerCase())).value;
+	try { await api("/api/albums/update", data); await loadAlbums(); toast("相册信息已保存。"); }
+	catch (error) { toast(error.message); }
+};
+$("#new-album").onclick = async () => {
+	const name = prompt("新相册名称：");
+	if (name === null) return;
+	try {
+		const result = await api("/api/albums/create", { name: name.trim() });
+		currentAlbumId = result.id;
+		await loadAlbums();
+		toast("相册已创建，可上传图片。");
+	} catch (error) { toast(error.message); }
+};
+$("#album-delete").onclick = async () => {
+	const name = $("#album-heading").textContent;
+	if (!confirm(`确定删除相册“${name}”及其中所有图片吗？`)) return;
+	try { await api("/api/albums/delete", { id: currentAlbumId }); currentAlbumId = ""; await loadAlbums(); toast("相册已删除。"); }
+	catch (error) { toast(error.message); }
+};
+$("#album-upload").onchange = async event => {
+	const images = Array.from(event.target.files || []);
+	let uploaded = 0;
+	for (const file of images) {
+		try {
+			if (!/^image\/(jpeg|png|webp|avif|gif)$/.test(file.type) || file.size > 8_000_000) throw new Error(`${file.name} 格式不支持或超过 8 MB`);
+			const response = await fetch("/api/albums/upload", { method: "POST", headers: { "content-type": file.type, "x-album-id": currentAlbumId, "x-manager-token": token }, body: file });
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.error || "上传失败");
+			uploaded++;
+		} catch (error) { toast(error.message); }
+	}
+	event.target.value = "";
+	await loadAlbums();
+	if (uploaded) toast(`已上传 ${uploaded} 张图片。`);
+};
 
 function row(post) {
 	const element = document.createElement("div");

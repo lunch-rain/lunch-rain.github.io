@@ -15,6 +15,7 @@
       <button class="nav-item active" data-view="dashboard">◫ <span>概览</span></button>
       <button class="nav-item" data-view="posts">▤ <span>文章管理</span></button>
       <button class="nav-item" data-view="images">▧ <span>图片管理</span></button>
+      <button class="nav-item" data-view="albums">▣ <span>相册管理</span></button>
       <button class="nav-item" data-view="settings">⚙ <span>站点设置</span></button>
       <button class="nav-item" data-view="files">▦ <span>全部内容与配置</span></button>
       <button class="nav-item" data-view="publish">↗ <span>同步发布</span></button>
@@ -28,6 +29,10 @@
       <div class="stats"><div class="stat"><span>全部文章</span><strong id="count-all">0</strong><small>篇内容</small></div><div class="stat"><span>已发布</span><strong id="count-public">0</strong><small>读者可见</small></div><div class="stat"><span>草稿箱</span><strong id="count-draft">0</strong><small>继续完善</small></div></div>
       <div class="panel"><div class="panel-heading"><div><h3>最近文章</h3><p>继续编辑最近的内容</p></div><button class="text-btn" data-go="posts">查看全部 →</button></div><div id="recent-list"></div></div>
       <div class="panel realm-manager-card"><div><h3>✦ 灵境</h3><p>已发布的文章与动态会按月份汇入灵境。文章分类填“随笔”或“杂谈”时会放入杂谈试管；动态可在“全部内容与配置”中编辑。</p></div><a class="open-blog" href="http://localhost:4321/tree/" target="_blank" rel="noopener">预览灵境 ↗</a></div>
+    </section>
+    <section id="albums" class="view">
+      <div class="section-head"><div><h2>相册管理</h2><p>这里的相册会显示在博客的“相册”页面。默认“图片库”包含已上传的图片。</p></div><div class="head-actions"><button id="new-album" class="secondary">＋ 新建相册</button><label id="album-upload-button" class="primary image-upload-button" hidden>↑ 上传到当前相册<input id="album-upload" type="file" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden></label></div></div>
+      <div class="panel image-library"><div class="image-library-toolbar"><button id="album-back" class="secondary" hidden>← 全部相册</button><strong id="album-heading">全部相册</strong><span id="album-count"></span><button id="album-manage-library" class="secondary" hidden>管理图片库 →</button><button id="album-delete" class="danger ghost" hidden>删除当前相册</button></div><div id="album-list" class="image-folders"></div><div id="album-editor" class="album-editor" hidden><label>名称<input id="album-name"></label><label>日期<input id="album-date" type="date"></label><label class="wide">描述<textarea id="album-description" rows="2"></textarea></label><label>地点<input id="album-location" placeholder="例如：旅行地点"></label><label>标签<input id="album-tags" placeholder="用逗号分隔"></label><label class="wide">封面路径<input id="album-cover" placeholder="留空则使用第一张图片"></label><label>访问密码<input id="album-password" placeholder="留空则公开"></label><label>密码提示<input id="album-password-hint"></label><button id="album-save" class="primary">保存相册信息</button></div><div id="album-images" class="image-grid"></div><p id="album-empty" class="image-empty" hidden>相册还没有图片，点击右上角上传。</p></div>
     </section>
     <section id="posts" class="view"><div class="section-head"><div><h2>文章管理</h2><p>Firefly 的 Markdown 文章，直接保存在项目目录。</p></div><button id="new-post" class="primary">＋ 新建文章</button></div><div class="panel"><div class="list-tools"><input id="search" placeholder="搜索文章标题或分类…"><span id="post-total"></span></div><div id="post-list"></div></div></section>
     <section id="images" class="view">

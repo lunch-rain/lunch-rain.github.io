@@ -16,6 +16,8 @@ const postsDir = path.join(root, "src", "content", "posts");
 const settingsFile = path.join(managerDir, "site-settings.json");
 const deployConfigFile = path.join(managerDir, "deploy-config.json");
 const imageRoot = path.join(root, "public", "uploads");
+const galleryRoot = path.join(root, "public", "gallery");
+const galleryDataFile = path.join(root, "src", "config", "gallery-data.json");
 const token = randomBytes(24).toString("hex");
 const port = Number(process.env.MANAGER_PORT || 4174);
 const gitRemote = "https://github.com/lunch-rain/lunch-rain.github.io.git";
@@ -68,6 +70,37 @@ async function verifiedImageFolder(folder = "") {
 
 function imageUrl(folder, filename) {
 	return `/uploads/${[...folder.split("/").filter(Boolean), filename].map(encodeURIComponent).join("/")}`;
+}
+
+function imageFilename(name) {
+	if (typeof name !== "string" || !name || name === "." || name === ".." || name.includes("/") || name.includes("\\") || !/\.(jpe?g|png|webp|avif|gif)$/i.test(name)) throw new Error("图片名称无效");
+	return name;
+}
+
+function albumId(id) {
+	if (typeof id !== "string" || !/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(id)) throw new Error("相册 ID 无效");
+	return id;
+}
+
+async function galleryData() {
+	return JSON.parse(await readFile(galleryDataFile, "utf8"));
+}
+
+async function albumDirectory(id) {
+	albumId(id);
+	const actual = await realpath(path.join(galleryRoot, id));
+	const base = await realpath(galleryRoot);
+	if (path.dirname(actual) !== base) throw new Error("相册目录无效");
+	return actual;
+}
+
+async function countImages(directory) {
+	let count = 0;
+	for (const item of await readdir(directory, { withFileTypes: true })) {
+		if (item.isDirectory()) count += await countImages(path.join(directory, item.name));
+		else if (item.isFile() && /\.(jpe?g|png|webp|avif|gif)$/i.test(item.name)) count++;
+	}
+	return count;
 }
 
 function reply(res, status, data, type = "application/json; charset=utf-8") {
@@ -252,15 +285,18 @@ const server = http.createServer(async (req, res) => {
 		}
 		if (req.method === "GET" && url.pathname === "/style.css") return reply(res, 200, await readFile(path.join(managerDir, "style.css"), "utf8"), "text/css; charset=utf-8");
 		if (req.method === "GET" && url.pathname === "/app.js") return reply(res, 200, await readFile(path.join(managerDir, "app.js"), "utf8"), "text/javascript; charset=utf-8");
-		if (req.method === "GET" && url.pathname.startsWith("/uploads/")) {
-			const relative = decodeURIComponent(url.pathname.slice("/uploads/".length));
+		if (req.method === "GET" && (url.pathname.startsWith("/uploads/") || url.pathname.startsWith("/gallery/"))) {
+			const isGallery = url.pathname.startsWith("/gallery/");
+			const relative = decodeURIComponent(url.pathname.slice(isGallery ? "/gallery/".length : "/uploads/".length));
 			const pieces = relative.split("/");
 			const filename = pieces.pop();
 			const mime = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif" }[path.extname(filename || "").toLowerCase()];
-			if (!mime || !filename || filename === "." || filename === ".." || filename.includes("\\")) throw new Error("图片路径无效");
-			const folder = await verifiedImageFolder(pieces.join("/"));
-			const file = await realpath(path.join(folder.resolved, filename));
-			if (path.dirname(file) !== folder.resolved) throw new Error("图片路径无效");
+			if (!mime) throw new Error("图片路径无效");
+			imageFilename(filename);
+			const directory = isGallery && pieces.length === 1 ? await albumDirectory(pieces[0]) : isGallery ? null : (await verifiedImageFolder(pieces.join("/"))).resolved;
+			if (!directory) throw new Error("图片路径无效");
+			const file = await realpath(path.join(directory, filename));
+			if (path.dirname(file) !== directory) throw new Error("图片路径无效");
 			return reply(res, 200, await readFile(file), mime);
 		}
 		if (req.method === "GET" && url.pathname === "/api/state") {
@@ -270,6 +306,81 @@ const server = http.createServer(async (req, res) => {
 			return reply(res, 200, { posts, settings: JSON.parse(await readFile(settingsFile, "utf8")), remote: gitRemote });
 		}
 		if (req.method === "GET" && url.pathname === "/api/deploy/config") return reply(res, 200, await deployConfig());
+		if (req.method === "GET" && url.pathname === "/api/albums") {
+			const config = await galleryData();
+			const albums = await Promise.all(config.albums.map(async album => {
+				if (album.id === "uploads") return { ...album, source: "uploads", count: await countImages(imageRoot) };
+				const directory = await albumDirectory(album.id);
+				const images = (await readdir(directory)).filter(name => /\.(jpe?g|png|webp|avif|gif)$/i.test(name));
+				return { ...album, count: images.length };
+			}));
+			return reply(res, 200, { albums });
+		}
+		if (req.method === "GET" && url.pathname === "/api/albums/images") {
+			const id = albumId(url.searchParams.get("id"));
+			if (id === "uploads") throw new Error("图片库请在图片文件夹中管理");
+			const directory = await albumDirectory(id);
+			const images = await Promise.all((await readdir(directory)).filter(name => /\.(jpe?g|png|webp|avif|gif)$/i.test(name)).map(async name => ({ name, url: `/gallery/${id}/${encodeURIComponent(name)}`, size: (await stat(path.join(directory, name))).size })));
+			return reply(res, 200, { images });
+		}
+		if (req.method === "POST" && url.pathname === "/api/albums/create") {
+			const input = JSON.parse((await body(req)).toString());
+			const name = String(input.name || "").trim();
+			if (!name || name.length > 80) throw new Error("请输入 1 到 80 字的相册名称");
+			const id = `album-${Date.now()}-${randomBytes(3).toString("hex")}`;
+			const config = await galleryData();
+			await mkdir(path.join(galleryRoot, id), { recursive: true });
+			await writeFile(path.join(galleryRoot, id, ".gitkeep"), "", "utf8");
+			config.albums.push({ id, name, description: String(input.description || "").trim().slice(0, 300) });
+			await writeFile(galleryDataFile, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+			return reply(res, 200, { id });
+		}
+		if (req.method === "POST" && url.pathname === "/api/albums/update") {
+			const input = JSON.parse((await body(req)).toString());
+			const id = albumId(input.id);
+			const config = await galleryData();
+			const album = config.albums.find(item => item.id === id);
+			if (!album) throw new Error("相册不存在");
+			const name = String(input.name || "").trim();
+			if (!name || name.length > 80) throw new Error("请输入 1 到 80 字的相册名称");
+			album.name = name;
+			for (const key of ["description", "date", "location", "cover", "password", "passwordHint"]) album[key] = String(input[key] || "").trim().slice(0, 300);
+			if (album.cover && !/^(https?:\/\/|\/)/i.test(album.cover)) throw new Error("封面请填写站内绝对路径或 HTTPS 地址");
+			album.tags = String(input.tags || "").split(/[,，]/).map(tag => tag.trim()).filter(Boolean).slice(0, 20);
+			await writeFile(galleryDataFile, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+			return reply(res, 200, { ok: true });
+		}
+		if (req.method === "POST" && url.pathname === "/api/albums/upload") {
+			const id = albumId(String(req.headers["x-album-id"] || ""));
+			if (id === "uploads" || !(await galleryData()).albums.some(album => album.id === id)) throw new Error("相册不存在");
+			const directory = await albumDirectory(id);
+			const mime = String(req.headers["content-type"] || "").split(";")[0];
+			const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif", "image/gif": "gif" }[mime];
+			if (!ext) throw new Error("仅支持 JPG、PNG、WebP、AVIF、GIF 图片");
+			const filename = `${Date.now()}-${randomBytes(4).toString("hex")}.${ext}`;
+			await writeFile(path.join(directory, filename), await body(req, 8_000_000));
+			return reply(res, 200, { url: `/gallery/${id}/${filename}` });
+		}
+		if (req.method === "POST" && url.pathname === "/api/albums/delete") {
+			const id = albumId(JSON.parse((await body(req)).toString()).id);
+			if (id === "uploads") throw new Error("默认图片库不能删除");
+			const config = await galleryData();
+			if (!config.albums.some(album => album.id === id)) throw new Error("相册不存在");
+			const directory = await albumDirectory(id);
+			await rm(directory, { recursive: true });
+			config.albums = config.albums.filter(album => album.id !== id);
+			await writeFile(galleryDataFile, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+			return reply(res, 200, { ok: true });
+		}
+		if (req.method === "POST" && url.pathname === "/api/albums/image/delete") {
+			const input = JSON.parse((await body(req)).toString());
+			const directory = await albumDirectory(albumId(input.id));
+			const filename = imageFilename(input.name);
+			const file = await realpath(path.join(directory, filename));
+			if (path.dirname(file) !== directory) throw new Error("图片路径无效");
+			await unlink(file);
+			return reply(res, 200, { ok: true });
+		}
 		if (req.method === "GET" && url.pathname === "/api/images") {
 			const { normalized, resolved } = await verifiedImageFolder(url.searchParams.get("folder") || "");
 			const folders = [];
@@ -304,6 +415,22 @@ const server = http.createServer(async (req, res) => {
 			const filename = `${Date.now()}-${randomBytes(4).toString("hex")}.${ext}`;
 			await writeFile(path.join(folder.resolved, filename), bytes);
 			return reply(res, 200, { url: imageUrl(folder.normalized, filename) });
+		}
+		if (req.method === "POST" && url.pathname === "/api/images/delete") {
+			const input = JSON.parse((await body(req)).toString());
+			const directory = (await verifiedImageFolder(input.folder || "")).resolved;
+			const file = await realpath(path.join(directory, imageFilename(input.name)));
+			if (path.dirname(file) !== directory) throw new Error("图片路径无效");
+			await unlink(file);
+			return reply(res, 200, { ok: true });
+		}
+		if (req.method === "POST" && url.pathname === "/api/images/folder/delete") {
+			const input = JSON.parse((await body(req)).toString());
+			const folder = imageFolder(input.folder || "");
+			if (!folder.normalized) throw new Error("不能删除图片库根目录");
+			const directory = (await verifiedImageFolder(folder.normalized)).resolved;
+			await rm(directory, { recursive: true });
+			return reply(res, 200, { ok: true });
 		}
 		if (req.method === "POST" && url.pathname === "/api/deploy/config") {
 			const config = validateDeployConfig(JSON.parse((await body(req)).toString()));

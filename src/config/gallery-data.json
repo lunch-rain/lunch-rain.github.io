@@ -1,0 +1,10 @@
+{
+  "albums": [
+    {
+      "id": "uploads",
+      "name": "图片库",
+      "description": "我上传的图片"
+    }
+  ],
+  "columnWidth": 240
+}
