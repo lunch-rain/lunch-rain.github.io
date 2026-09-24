@@ -2,8 +2,14 @@
   "albums": [
     {
       "id": "uploads",
-      "name": "图片库",
-      "description": "我上传的图片"
+      "name": "平泽唯",
+      "description": "喵喵喵",
+      "date": "2026-09-24",
+      "location": "",
+      "cover": "",
+      "password": "",
+      "passwordHint": "",
+      "tags": []
     }
   ],
   "columnWidth": 240
