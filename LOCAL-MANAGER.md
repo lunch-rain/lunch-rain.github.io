@@ -17,6 +17,8 @@ pnpm manager
 
 管理器只监听本机 `127.0.0.1`。文章保存在 `src/content/posts/`，上传的图片保存在 `public/uploads/`，个人信息保存在 `manager/site-settings.json`。草稿会保存到本地，但不会显示在公开博客。Firefly 的示例文章、动态、项目和其他人的个人资料已清空。站点运行时长从 `siteStartDate` 开始逐秒更新，可在站点设置中调整起点。
 
+「站点设置」按个人资料、站点信息、外观与公告、高级配置分组。个人资料分类对应 [Firefly 官方资料说明](https://docs-firefly.cuteleaf.cn/zh/guide/profile.html)：头像、显示名称、个人签名、社交链接。可直接上传头像和壁纸；社交链接可选常用平台自动填写图标。修改后点击「保存全部修改」，再打开本地预览。高级配置提供常用源码文件的快捷入口；「全部内容与配置」可按配置、内容、页面、组件、样式和素材筛选文件。
+
 ## 双轨发布到 GitHub Pages 和 Vercel
 
 发布页参考 XinghuisamaBlogs 的双轨流程，默认共用 `lunch-rain/lunch-rain.github.io` 仓库：`gh-pages` 分支只放构建后的网页，`main` 分支放源码。可在管理器中修改两个仓库地址和分支。

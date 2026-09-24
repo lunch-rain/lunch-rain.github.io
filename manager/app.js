@@ -1,17 +1,5 @@
 const token = document.querySelector('meta[name="manager-token"]').content;
 const $ = selector => document.querySelector(selector);
-const startTimeLabel = document.createElement("label");
-startTimeLabel.className = "wide";
-startTimeLabel.textContent = "站点开始时间（含时区）";
-const startTimeInput = document.createElement("input");
-startTimeInput.dataset.setting = "siteStartDate";
-startTimeInput.placeholder = "2026-09-24T15:10:15+08:00";
-startTimeLabel.append(startTimeInput);
-$("#settings .settings-grid").append(startTimeLabel);
-const linksPanel = document.createElement("div");
-linksPanel.className = "panel profile-links-panel";
-linksPanel.innerHTML = '<div class="panel-heading"><div><h3>个人资料链接</h3><p>按照 Firefly 资料页的格式添加名称、Iconify 图标和地址。</p></div><button id="add-profile-link" class="secondary">＋ 添加链接</button></div><div id="profile-links"></div><p class="editor-hint">图标示例：fa7-brands:github、fa7-solid:envelope、fa7-solid:rss</p>';
-$("#settings").append(linksPanel);
 const assetPanel = document.createElement("div");
 assetPanel.className = "panel profile-links-panel";
 assetPanel.innerHTML = '<h3>上传站点素材</h3><p class="editor-hint">图片、音乐可以上传到相应目录；相册填 public/gallery/相册ID。</p><label>目标目录<input id="asset-folder" value="public/uploads" placeholder="public/uploads"></label><label class="upload-label">选择图片或音频<input id="asset-file" type="file" accept="image/png,image/jpeg,image/webp,image/avif,image/gif,audio/mpeg,audio/ogg,audio/wav,audio/mp4"></label><label>上传后的站内路径<input id="asset-url" readonly></label>';
@@ -21,10 +9,30 @@ let editingId = null;
 let lastUpload = "";
 let files = [];
 let activeFile = "";
+const linkPresets = {
+	GitHub: { icon: "fa7-brands:github", url: "https://github.com/lunch-rain" },
+	邮箱: { icon: "fa7-solid:envelope", url: "mailto:" },
+	RSS: { icon: "fa7-solid:rss", url: "/rss/" },
+	Atom: { icon: "fa7-solid:atom", url: "/atom/" },
+	哔哩哔哩: { icon: "fa7-brands:bilibili", url: "https://space.bilibili.com/" },
+	X: { icon: "fa7-brands:x-twitter", url: "https://x.com/" },
+};
 
 function addProfileLink(item = {}) {
 	const row = document.createElement("div");
 	row.className = "profile-link-row";
+	const typeField = document.createElement("label");
+	typeField.textContent = "平台";
+	const type = document.createElement("select");
+	for (const name of ["自定义", ...Object.keys(linkPresets)]) {
+		const option = document.createElement("option");
+		option.value = name;
+		option.textContent = name;
+		type.append(option);
+	}
+	type.value = linkPresets[item.name]?.icon === item.icon ? item.name : "自定义";
+	typeField.append(type);
+	row.append(typeField);
 	for (const [key, label] of [["name", "名称"], ["icon", "图标"], ["url", "链接地址"]]) {
 		const field = document.createElement("label");
 		field.textContent = label;
@@ -34,6 +42,13 @@ function addProfileLink(item = {}) {
 		field.append(input);
 		row.append(field);
 	}
+	type.onchange = () => {
+		if (type.value === "自定义") return;
+		const preset = linkPresets[type.value];
+		row.querySelector('[data-link-field="name"]').value = type.value;
+		row.querySelector('[data-link-field="icon"]').value = preset.icon;
+		row.querySelector('[data-link-field="url"]').value = type.value === "GitHub" ? ($("[data-setting=github]").value || preset.url) : preset.url;
+	};
 	const showName = document.createElement("label");
 	showName.className = "show-name";
 	const checkbox = document.createElement("input");
@@ -108,9 +123,17 @@ function render() {
 	$("#recent-list").replaceChildren(...posts.slice(0, 5).map(row));
 	const query = $("#search").value.trim().toLowerCase();
 	$("#post-list").replaceChildren(...posts.filter(post => `${post.title} ${post.category} ${post.id}`.toLowerCase().includes(query)).map(row));
-	for (const input of document.querySelectorAll("[data-setting]")) input.value = state.settings[input.dataset.setting] || "";
+	for (const input of document.querySelectorAll("[data-setting]")) {
+		const value = state.settings[input.dataset.setting] || "";
+		if (input.dataset.setting === "siteStartDate" && value) {
+			const date = new Date(value);
+			const pad = number => String(number).padStart(2, "0");
+			input.value = Number.isNaN(date.getTime()) ? "" : `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+		} else input.value = value;
+	}
 	$("#profile-links").replaceChildren();
 	for (const item of state.settings.profileLinks || []) addProfileLink(item);
+	updateImagePreviews();
 }
 
 async function refresh() { state = await api("/api/state"); render(); }
@@ -171,7 +194,16 @@ $("#save-settings").onclick = async () => {
 		url: row.querySelector('[data-link-field="url"]').value,
 		showName: row.querySelector('[data-link-field="showName"]').checked,
 	}));
-	try { await api("/api/settings", data); await refresh(); toast("站点设置已保存。"); }
+	try {
+		if (data.siteStartDate) data.siteStartDate = new Date(data.siteStartDate).toISOString();
+		for (const [index, link] of data.profileLinks.entries()) {
+			if ((link.name || link.icon || link.url) && (!link.name || !link.icon || !link.url)) throw new Error(`第 ${index + 1} 个社交链接还未填完整。`);
+		}
+		for (const link of data.profileLinks) if (link.icon === "fa7-brands:github" && data.github) link.url = data.github;
+		await api("/api/settings", data);
+		await refresh();
+		toast("设置已保存。打开本地博客即可预览。");
+	}
 	catch (error) { toast(error.message); }
 };
 
@@ -195,11 +227,41 @@ async function uploadImage(event, target) {
 		if (!response.ok) throw new Error(result.error);
 		lastUpload = result.url;
 		$(target).value = result.url;
-		toast(`图片已上传：${result.url}`);
+		updateImagePreviews();
+		toast(`图片已上传：${result.url}。请保存当前内容。`);
 	} catch (error) { toast(error.message); }
 }
 $("#image-upload").onchange = event => uploadImage(event, "#post-image");
-$("#settings-upload").onchange = event => uploadImage(event, "#settings-upload-url");
+$("#avatar-upload").onchange = event => uploadImage(event, '[data-setting="avatar"]');
+$("#desktop-upload").onchange = event => uploadImage(event, '[data-setting="bannerDesktop"]');
+$("#mobile-upload").onchange = event => uploadImage(event, '[data-setting="bannerMobile"]');
+for (const key of ["avatar", "bannerDesktop", "bannerMobile"]) $(`[data-setting="${key}"]`).oninput = updateImagePreviews;
+
+function updateImagePreviews() {
+	for (const [key, id] of [["avatar", "avatar-preview"], ["bannerDesktop", "desktop-preview"], ["bannerMobile", "mobile-preview"]]) {
+		const img = $(`#${id}`);
+		const value = $(`[data-setting="${key}"]`).value.trim();
+		img.hidden = !value;
+		img.onerror = () => { img.hidden = true; };
+		if (value) img.src = /^https?:\/\//i.test(value) ? value : `http://localhost:4321/${value.replace(/^\//, "")}`;
+	}
+}
+
+document.querySelectorAll("[data-settings-tab]").forEach(button => button.onclick = () => {
+	for (const item of document.querySelectorAll("[data-settings-tab]")) {
+		const active = item === button;
+		item.classList.toggle("active", active);
+		item.setAttribute("aria-selected", String(active));
+	}
+	for (const panel of document.querySelectorAll("[data-settings-panel]")) panel.hidden = panel.dataset.settingsPanel !== button.dataset.settingsTab;
+});
+document.querySelectorAll("[data-open-config]").forEach(button => button.onclick = async () => {
+	$("#file-search").value = "";
+	view("files");
+	$("#file-category").value = "config";
+	await loadFileList();
+	await openFile(button.dataset.openConfig);
+});
 $("#asset-file").onchange = async event => {
 	const file = event.target.files[0];
 	if (!file) return;
@@ -263,9 +325,18 @@ async function loadFileList() {
 
 function renderFiles() {
 	const query = $("#file-search").value.trim().toLowerCase();
+	const category = $("#file-category").value;
+	const inCategory = file => ({
+		config: file.startsWith("src/config/") || ["astro.config.mjs", "vercel.json"].includes(file),
+		content: file.startsWith("src/content/"),
+		pages: file.startsWith("src/pages/"),
+		components: file.startsWith("src/components/") || file.startsWith("src/layouts/"),
+		styles: file.startsWith("src/styles/"),
+		assets: file.startsWith("public/"),
+	})[category] ?? true;
 	const list = $("#file-list");
 	list.replaceChildren();
-	for (const file of files.filter(item => item.toLowerCase().includes(query))) {
+	for (const file of files.filter(item => inCategory(item) && item.toLowerCase().includes(query))) {
 		const button = document.createElement("button");
 		button.className = `file-item${file === activeFile ? " active" : ""}`;
 		button.textContent = file;
@@ -288,6 +359,7 @@ async function openFile(file) {
 }
 
 $("#file-search").oninput = renderFiles;
+$("#file-category").onchange = renderFiles;
 $("#new-file").onclick = async () => {
 	const file = prompt("新内容路径（例如 src/content/posts/my-first-post.md）");
 	if (!file) return;
