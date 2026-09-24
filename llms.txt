@@ -5,5 +5,16 @@
 - [主页](https://lunch-rain.github.io/)
 - [归档](https://lunch-rain.github.io/archive/)
 - [关于我](https://lunch-rain.github.io/about/)
+- [友链](https://lunch-rain.github.io/friends/): 这里是我的朋友们，欢迎互相访问交流
+- [留言](https://lunch-rain.github.io/guestbook/): 欢迎在这里留下你的足迹，分享你的想法和建议
+- [动态](https://lunch-rain.github.io/dynamic/): 随手记下此刻的想法与日常。
+- [项目](https://lunch-rain.github.io/projects/): 这里展示我开发过的项目
+- [相册](https://lunch-rain.github.io/gallery/): 记录生活中的美好瞬间
+- [书签导航](https://lunch-rain.github.io/booknav/): 收藏一些好用的网站，按分类整理
+- [哔哩哔哩](https://lunch-rain.github.io/bilibili/): 我的哔哩哔哩追番与追剧列表
+- [番组计划](https://lunch-rain.github.io/bangumi/): 记录我的二次元之旅
+- [VNDB](https://lunch-rain.github.io/vndb/): 我的 VNDB 视觉小说列表
+- [MyAnimeList](https://lunch-rain.github.io/myanimelist/): 我的 MyAnimeList 动画与漫画列表
+- [打赏](https://lunch-rain.github.io/sponsor/): 如果我的内容对你有帮助，欢迎通过以下方式打赏我，你的支持是我持续创作的动力！
 
 ## Recent Posts
