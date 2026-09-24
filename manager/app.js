@@ -11,6 +11,8 @@ let files = [];
 let activeFile = "";
 let currentImageFolder = "";
 let currentAlbumId = "";
+let dynamicItems = [];
+let editingDynamicId = null;
 const linkPresets = {
 	GitHub: { icon: "fa7-brands:github", url: "https://github.com/lunch-rain" },
 	邮箱: { icon: "fa7-solid:envelope", url: "mailto:" },
@@ -86,13 +88,14 @@ function toast(message) {
 function view(name) {
 	document.querySelectorAll(".view").forEach(element => element.classList.toggle("active", element.id === name));
 	document.querySelectorAll(".nav-item").forEach(element => element.classList.toggle("active", element.dataset.view === name || (name === "editor" && element.dataset.view === "posts")));
-	const titles = { dashboard: ["早上好，RainLove ☀", "写下新的故事，整理你的灵感。"], posts: ["文章工作台", "在这里管理所有 Firefly 文章。"], images: ["图片工作台", "上传、预览并整理博客图片。"], albums: ["相册工作台", "管理博客相册中的图片。"], editor: ["专注写作", "把灵感变成一篇文章。"], settings: ["我的博客", "让博客呈现你的风格。"], files: ["全部内容与配置", "每个文件都可以在这里找到。"], publish: ["准备发布", "把修改带到线上。"] };
+	const titles = { dashboard: ["早上好，RainLove ☀", "写下新的故事，整理你的灵感。"], posts: ["文章工作台", "在这里管理所有 Firefly 文章。"], dynamics: ["动态工作台", "写下今天的新动态。"], images: ["图片工作台", "上传、预览并整理博客图片。"], albums: ["相册工作台", "管理博客相册中的图片。"], editor: ["专注写作", "把灵感变成一篇文章。"], settings: ["我的博客", "让博客呈现你的风格。"], files: ["全部内容与配置", "每个文件都可以在这里找到。"], publish: ["准备发布", "把修改带到线上。"] };
 	$("#page-title").textContent = titles[name][0];
 	$("#page-subtitle").textContent = titles[name][1];
 	window.scrollTo(0, 0);
 	if (name === "files") loadFileList().catch(error => toast(error.message));
 	if (name === "images") loadImageLibrary().catch(error => toast(error.message));
 	if (name === "albums") loadAlbums().catch(error => toast(error.message));
+	if (name === "dynamics") loadDynamics().catch(error => toast(error.message));
 }
 
 async function loadImageLibrary() {
@@ -322,6 +325,105 @@ $("#album-upload").onchange = async event => {
 	event.target.value = "";
 	await loadAlbums();
 	if (uploaded) toast(`已上传 ${uploaded} 张图片。`);
+};
+
+function localDateTime(value = new Date()) {
+	const date = new Date(value);
+	const pad = number => String(number).padStart(2, "0");
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function editDynamic(item = null) {
+	editingDynamicId = item?.id || null;
+	$("#dynamic-editor-heading").textContent = item ? "编辑动态" : "新动态";
+	$("#dynamic-date").value = localDateTime(item?.published || new Date());
+	$("#dynamic-location").value = item?.location || "";
+	$("#dynamic-body").value = item?.body || "";
+	$("#dynamic-pinned").checked = Boolean(item?.pinned);
+	$("#delete-dynamic").hidden = !item;
+	$("#dynamic-preview").hidden = true;
+	$("#dynamic-result").textContent = "";
+}
+
+async function loadDynamics() {
+	dynamicItems = (await api("/api/dynamics")).items;
+	const list = $("#dynamic-list");
+	list.replaceChildren();
+	if (!dynamicItems.length) {
+		const empty = document.createElement("p");
+		empty.className = "editor-hint";
+		empty.textContent = "还没有动态，右侧可以发布第一条。";
+		list.append(empty);
+	}
+	for (const item of dynamicItems) {
+		const row = document.createElement("div");
+		row.className = "post-row";
+		const summary = document.createElement("div");
+		const title = document.createElement("strong");
+		title.textContent = item.body.replace(/[#*_`\[\]!]/g, "").slice(0, 90);
+		const meta = document.createElement("small");
+		meta.textContent = `${new Date(item.published).toLocaleString("zh-CN")} ${item.pinned ? "· 已置顶" : ""}`;
+		summary.append(title, meta);
+		const button = document.createElement("button");
+		button.className = "secondary";
+		button.textContent = "编辑";
+		button.onclick = () => editDynamic(item);
+		row.append(summary, button);
+		list.append(row);
+	}
+}
+
+$("#new-dynamic").onclick = () => editDynamic();
+$("#preview-dynamic").onclick = async () => {
+	try {
+		const result = await api("/api/preview", { body: $("#dynamic-body").value });
+		$("#dynamic-preview").innerHTML = result.html;
+		$("#dynamic-preview").hidden = false;
+	} catch (error) { toast(error.message); }
+};
+$("#dynamic-image-upload").onchange = async event => {
+	const file = event.target.files?.[0];
+	if (!file) return;
+	try {
+		const response = await fetch("/api/upload", { method: "POST", headers: { "content-type": file.type, "x-manager-token": token }, body: file });
+		const result = await response.json();
+		if (!response.ok) throw new Error(result.error || "上传失败");
+		$("#dynamic-body").value += `\n\n![${file.name}](${result.url})\n`;
+		toast("图片已添加到动态。");
+	} catch (error) { toast(error.message); }
+	event.target.value = "";
+};
+
+async function saveDynamic() {
+	const result = await api("/api/dynamic", { id: editingDynamicId, published: $("#dynamic-date").value, location: $("#dynamic-location").value, pinned: $("#dynamic-pinned").checked, body: $("#dynamic-body").value });
+	editingDynamicId = result.id;
+	await loadDynamics();
+	editDynamic(dynamicItems.find(item => item.id === result.id));
+	return result;
+}
+$("#save-dynamic").onclick = async () => {
+	try { await saveDynamic(); toast("动态已保存到本地。"); }
+	catch (error) { toast(error.message); }
+};
+$("#publish-dynamic").onclick = async () => {
+	const button = $("#publish-dynamic");
+	button.disabled = true;
+	button.textContent = "正在构建并发布…";
+	try {
+		await saveDynamic();
+		$("#dynamic-result").textContent = "正在上传 GitHub Pages…";
+		await api("/api/publish/pages", {});
+		$("#dynamic-result").textContent = "静态页已上传，正在同步源码…";
+		await api("/api/publish/source", {});
+		$("#dynamic-result").textContent = "发布完成：GitHub Pages 已更新，Vercel 源码已同步。";
+		toast("动态已发布。");
+	} catch (error) { $("#dynamic-result").textContent = `发布失败：${error.message}`; toast(error.message); }
+	finally { button.disabled = false; button.textContent = "保存并发布"; }
+};
+$("#delete-dynamic").onclick = async () => {
+	if (!editingDynamicId || !confirm("确定删除这条动态吗？删除后还需同步发布才能从线上移除。")) return;
+	try { await api("/api/dynamic/delete", { id: editingDynamicId }); editDynamic(); await loadDynamics(); toast("动态已从本地删除。"); }
+	catch (error) { toast(error.message); }
 };
 
 function row(post) {
@@ -656,5 +758,6 @@ $("#delete-file").onclick = async () => {
 	catch (error) { toast(error.message); }
 };
 
+editDynamic();
 refresh().catch(error => toast(error.message));
 loadDeployConfig().catch(error => toast(error.message));

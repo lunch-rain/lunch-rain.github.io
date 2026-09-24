@@ -1,6 +1,9 @@
 ---
 import { commentConfig } from "@/config";
 
+interface Props { term?: string }
+const { term } = Astro.props;
+
 if (!commentConfig?.giscus) {
 	throw new Error("Giscus comments are not configured");
 }
@@ -20,7 +23,8 @@ const darkTheme = "dark";
   repoId={giscus.repoId}
   category={giscus.category}
   categoryId={giscus.categoryId}
-  mapping={giscus.mapping}
+  mapping={term ? "specific" : giscus.mapping}
+  term={term}
   strict={giscus.strict}
   reactionsEnabled={giscus.reactionsEnabled}
   emitMetadata={giscus.emitMetadata}

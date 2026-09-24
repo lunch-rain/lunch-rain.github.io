@@ -13,6 +13,7 @@ import sanitizeHtml from "sanitize-html";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const managerDir = path.join(root, "manager");
 const postsDir = path.join(root, "src", "content", "posts");
+const dynamicDir = path.join(root, "src", "content", "dynamic");
 const settingsFile = path.join(managerDir, "site-settings.json");
 const deployConfigFile = path.join(managerDir, "deploy-config.json");
 const imageRoot = path.join(root, "public", "uploads");
@@ -122,6 +123,16 @@ async function body(req, max = 2_000_000) {
 function safeId(id) {
 	if (!/^[a-zA-Z0-9_/-]+\.(md|mdx)$/.test(id) || id.includes("..") || id.startsWith("/")) throw new Error("文章路径无效");
 	return path.join(postsDir, id);
+}
+
+function dynamicFile(id) {
+	if (typeof id !== "string" || !/^[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*\.md$/.test(id)) throw new Error("动态文件名无效");
+	return path.join(dynamicDir, id);
+}
+
+async function readDynamic(id) {
+	const parsed = matter(await readFile(dynamicFile(id), "utf8"));
+	return { id, published: new Date(parsed.data.published).toISOString(), pinned: Boolean(parsed.data.pinned), location: String(parsed.data.location || ""), body: parsed.content.trim() };
 }
 
 async function allPosts(dir = postsDir, prefix = "") {
@@ -304,6 +315,31 @@ const server = http.createServer(async (req, res) => {
 			const posts = await Promise.all(ids.map(readPost));
 			posts.sort((a, b) => b.published.localeCompare(a.published));
 			return reply(res, 200, { posts, settings: JSON.parse(await readFile(settingsFile, "utf8")), remote: gitRemote });
+		}
+		if (req.method === "GET" && url.pathname === "/api/dynamics") {
+			const ids = (await allPosts(dynamicDir)).filter(id => id.endsWith(".md"));
+			const items = await Promise.all(ids.map(readDynamic));
+			items.sort((a, b) => b.published.localeCompare(a.published));
+			return reply(res, 200, { items });
+		}
+		if (req.method === "POST" && url.pathname === "/api/dynamic") {
+			const input = JSON.parse((await body(req)).toString());
+			const content = String(input.body || "").trim();
+			if (!content) throw new Error("请输入动态内容");
+			const date = new Date(input.published || Date.now());
+			if (Number.isNaN(date.getTime())) throw new Error("发布时间无效");
+			const id = input.id ? String(input.id) : `dynamic-${Date.now()}.md`;
+			const file = dynamicFile(id);
+			await mkdir(path.dirname(file), { recursive: true });
+			await writeFile(file, matter.stringify(`\n${content}\n`, { published: date, pinned: Boolean(input.pinned), location: String(input.location || "").trim().slice(0, 120) }), "utf8");
+			return reply(res, 200, { ok: true, id });
+		}
+		if (req.method === "POST" && url.pathname === "/api/dynamic/delete") {
+			const input = JSON.parse((await body(req)).toString());
+			const file = dynamicFile(input.id);
+			await verifyExistingPath(file);
+			await unlink(file);
+			return reply(res, 200, { ok: true });
 		}
 		if (req.method === "GET" && url.pathname === "/api/deploy/config") return reply(res, 200, await deployConfig());
 		if (req.method === "GET" && url.pathname === "/api/albums") {
