@@ -10,9 +10,9 @@
   "bannerTitle": "欢迎来到 lunch-rain 的博客",
   "bannerSubtitle": "记录生活与灵感",
   "bannerDesktop": "https://bu.dusays.com/2026/09/24/6ab4ad6ee23bc.jpg",
-  "bannerMobile": "https://bu.dusays.com/2026/09/24/6ab4abb8d045e.jpg",
+  "bannerMobile": "/uploads/1790240566502-00ef5420.jpg",
   "announcement": "欢迎来到我的博客！",
-  "siteStartDate": "2026-09-24T15:10:15+08:00",
+  "siteStartDate": "2026-09-24T07:10:15.000Z",
   "profileLinks": [
     {
       "name": "GitHub",
@@ -30,6 +30,12 @@
       "name": "Atom",
       "icon": "fa7-solid:atom",
       "url": "/atom/",
+      "showName": false
+    },
+    {
+      "name": "哔哩哔哩",
+      "icon": "fa7-brands:bilibili",
+      "url": "https://space.bilibili.com/484641873",
       "showName": false
     }
   ]
