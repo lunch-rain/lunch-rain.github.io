@@ -98,7 +98,7 @@ const managerConfigStr = JSON.stringify({
     var audio = document.createElement('audio');
     audio.crossOrigin = 'anonymous';
     audio.style.display = 'none';
-    audio.preload = 'none'; // 阻止浏览器预加载和自动恢复播放
+    audio.preload = 'auto'; // 提前缓冲首曲，点击播放时无需再等待首次请求
     document.body.appendChild(audio);
     audio.pause(); // 确保不自动播放
 

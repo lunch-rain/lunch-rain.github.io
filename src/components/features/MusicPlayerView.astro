@@ -59,28 +59,9 @@ const viewConfigStr = JSON.stringify({
     var mgr = window.__fireflyMusic;
     if (!mgr) return;
 
-    var initScheduled = false;
     function scheduleInit() {
-        if (initScheduled) return;
-        initScheduled = true;
-
-        var fired = false;
-        function go() {
-            if (fired) return;
-            fired = true;
-            document.removeEventListener('pointerdown', go, true);
-            document.removeEventListener('keydown', go, true);
-            mgr.init();
-        }
-        document.addEventListener('pointerdown', go, true);
-        document.addEventListener('keydown', go, true);
-
-        function afterLoad() {
-            if (window.requestIdleCallback) window.requestIdleCallback(go, { timeout: 2000 });
-            else setTimeout(go, 800);
-        }
-        if (document.readyState === 'complete') afterLoad();
-        else window.addEventListener('load', afterLoad, { once: true });
+        // 本地歌单已随页面下发，无需等待页面全部资源加载完成。
+        mgr.init();
     }
 
     function initWidget(widget) {
