@@ -1,4 +1,4 @@
-# lunch-rain 的博客
+# RainLove 的博客
 
 基于 [Firefly](https://github.com/CuteLeaf/Firefly) 的个人博客，配有仅在本地运行的内容管理器。
 

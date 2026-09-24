@@ -84,7 +84,7 @@ function toast(message) {
 function view(name) {
 	document.querySelectorAll(".view").forEach(element => element.classList.toggle("active", element.id === name));
 	document.querySelectorAll(".nav-item").forEach(element => element.classList.toggle("active", element.dataset.view === name || (name === "editor" && element.dataset.view === "posts")));
-	const titles = { dashboard: ["早上好，lunch-rain ☀", "写下新的故事，整理你的灵感。"], posts: ["文章工作台", "在这里管理所有 Firefly 文章。"], editor: ["专注写作", "把灵感变成一篇文章。"], settings: ["我的博客", "让博客呈现你的风格。"], files: ["全部内容与配置", "每个文件都可以在这里找到。"], publish: ["准备发布", "把修改带到线上。"] };
+	const titles = { dashboard: ["早上好，RainLove ☀", "写下新的故事，整理你的灵感。"], posts: ["文章工作台", "在这里管理所有 Firefly 文章。"], editor: ["专注写作", "把灵感变成一篇文章。"], settings: ["我的博客", "让博客呈现你的风格。"], files: ["全部内容与配置", "每个文件都可以在这里找到。"], publish: ["准备发布", "把修改带到线上。"] };
 	$("#page-title").textContent = titles[name][0];
 	$("#page-subtitle").textContent = titles[name][1];
 	window.scrollTo(0, 0);
