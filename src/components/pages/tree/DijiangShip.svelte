@@ -11,6 +11,7 @@
 		new THREE.Vector3(-2.3, 0, 1.5),
 		new THREE.Vector3(-2.3, -0.5, 1.5),
 	];
+	const markerColors = ["#0ea5e9", "#eab308", "#10b981", "#f1f5f9"];
 
 	onMount(() => {
 		let disposed = false;
@@ -32,6 +33,8 @@
 		try {
 			renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 			renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+			renderer.domElement.style.position = "absolute";
+			renderer.domElement.style.inset = "0";
 			host.appendChild(renderer.domElement);
 		} catch {
 			error = "浏览器无法启动 3D 渲染。";
@@ -121,9 +124,9 @@
 	});
 </script>
 
-<div class="ship-canvas" bind:this={host} aria-label="帝江号黄色粒子点云舰船">
+<div class="ship-canvas" bind:this={host} style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none" aria-label="帝江号黄色粒子点云舰船">
 	{#each ["post", "chatter", "moment", "message"] as kind, index}
-		<span class="beacon {kind}" bind:this={markers[index]} aria-hidden="true"></span>
+		<span class="beacon {kind}" bind:this={markers[index]} style={`position:absolute;z-index:2;width:12px;height:12px;transform:translate(-50%,-50%) rotate(45deg);border:3px solid #181818;background:${markerColors[index]};color:${markerColors[index]};box-shadow:0 0 18px currentColor`} aria-hidden="true"></span>
 	{/each}
 </div>
 {#if error}<p class="ship-error">{error}</p>{/if}
