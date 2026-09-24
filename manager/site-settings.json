@@ -8,11 +8,24 @@
   "avatar": "https://bu.dusays.com/2026/09/24/6ab4a5ab5a49c.jpg",
   "github": "https://github.com/lunch-rain",
   "bannerTitle": "欢迎来到 RainLove 的博客",
-  "bannerSubtitle": "记录生活与灵感",
-  "bannerDesktop": "https://bu.dusays.com/2026/09/24/6ab4ad6ee23bc.jpg",
-  "bannerMobile": "/uploads/1790240566502-00ef5420.jpg",
   "announcement": "欢迎来到我的博客！",
-  "siteStartDate": "2026-09-24T07:10:15.000Z",
+  "siteStartDate": "2026-09-24T07:10:15Z",
+  "bannerSubtitle": [
+    "In Reddened Chrysalis, I Once Rest",
+    "From Shattered Sky, I Free Fall",
+    "Amidst Silenced Stars, I Deep Sleep",
+    "Upon Lighted Fyrefly, I Soon Gaze",
+    "From Undreamt Night, I Thence Shine",
+    "In Finalized Morrow, I Full Bloom"
+  ],
+  "bannerDesktop": [
+    "https://bu.dusays.com/2026/09/24/6ab4ad6ee23bc.jpg",
+    "/uploads/1790243907161-3227fdf7.jpg",
+    "/uploads/1790243910765-793d29fc.jpg"
+  ],
+  "bannerMobile": [
+    "/uploads/1790240566502-00ef5420.jpg"
+  ],
   "profileLinks": [
     {
       "name": "GitHub",

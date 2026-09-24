@@ -309,9 +309,17 @@ const server = http.createServer(async (req, res) => {
 		}
 		if (req.method === "POST" && url.pathname === "/api/settings") {
 			const input = JSON.parse((await body(req)).toString());
-			const keys = ["title", "subtitle", "siteUrl", "description", "author", "bio", "avatar", "github", "bannerTitle", "bannerSubtitle", "bannerDesktop", "bannerMobile", "announcement", "siteStartDate"];
+			const keys = ["title", "subtitle", "siteUrl", "description", "author", "bio", "avatar", "github", "bannerTitle", "announcement", "siteStartDate"];
 			const settings = {};
 			for (const key of keys) settings[key] = String(input[key] || "").trim();
+			for (const key of ["bannerSubtitle", "bannerDesktop", "bannerMobile"]) {
+				settings[key] = (Array.isArray(input[key]) ? input[key] : String(input[key] || "").split(/\r?\n/))
+					.map(value => String(value).trim()).filter(Boolean).slice(0, 20);
+				if (!settings[key].length) throw new Error(`${key} 至少需要一项`);
+			}
+			for (const key of ["bannerDesktop", "bannerMobile"]) {
+				if (settings[key].some(value => !/^(https:\/\/|\/(?!\/))/.test(value))) throw new Error(`${key} 只能填写 https 图片地址或站内路径`);
+			}
 			settings.profileLinks = Array.isArray(input.profileLinks) ? input.profileLinks.slice(0, 30).map(item => ({
 				name: String(item.name || "").trim(), icon: String(item.icon || "").trim(),
 				url: String(item.url || "").trim(), showName: Boolean(item.showName),

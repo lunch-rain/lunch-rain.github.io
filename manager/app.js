@@ -129,7 +129,7 @@ function render() {
 			const date = new Date(value);
 			const pad = number => String(number).padStart(2, "0");
 			input.value = Number.isNaN(date.getTime()) ? "" : `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-		} else input.value = value;
+		} else input.value = Array.isArray(value) ? value.join("\n") : value;
 	}
 	$("#profile-links").replaceChildren();
 	for (const item of state.settings.profileLinks || []) addProfileLink(item);
@@ -188,6 +188,9 @@ $("#delete-post").onclick = async () => {
 $("#save-settings").onclick = async () => {
 	const data = {};
 	for (const input of document.querySelectorAll("[data-setting]")) data[input.dataset.setting] = input.value;
+	for (const key of ["bannerSubtitle", "bannerDesktop", "bannerMobile"]) {
+		data[key] = data[key].split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+	}
 	data.profileLinks = Array.from(document.querySelectorAll(".profile-link-row"), row => ({
 		name: row.querySelector('[data-link-field="name"]').value,
 		icon: row.querySelector('[data-link-field="icon"]').value,
@@ -233,17 +236,52 @@ async function uploadImage(event, target) {
 }
 $("#image-upload").onchange = event => uploadImage(event, "#post-image");
 $("#avatar-upload").onchange = event => uploadImage(event, '[data-setting="avatar"]');
-$("#desktop-upload").onchange = event => uploadImage(event, '[data-setting="bannerDesktop"]');
-$("#mobile-upload").onchange = event => uploadImage(event, '[data-setting="bannerMobile"]');
+async function uploadBannerImages(event, key) {
+	const files = Array.from(event.target.files || []);
+	if (!files.length) return;
+	const input = $(`[data-setting="${key}"]`);
+	const urls = input.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+	try {
+		for (const file of files) {
+			const response = await fetch("/api/upload", { method: "POST", headers: { "content-type": file.type, "x-manager-token": token }, body: file });
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.error);
+			urls.push(result.url);
+			input.value = urls.join("\n");
+			updateImagePreviews();
+		}
+		toast(`已添加 ${files.length} 张图片，请点击“保存设置”。`);
+	} catch (error) { toast(error.message); }
+	event.target.value = "";
+}
+$("#desktop-upload").onchange = event => uploadBannerImages(event, "bannerDesktop");
+$("#mobile-upload").onchange = event => uploadBannerImages(event, "bannerMobile");
 for (const key of ["avatar", "bannerDesktop", "bannerMobile"]) $(`[data-setting="${key}"]`).oninput = updateImagePreviews;
 
 function updateImagePreviews() {
-	for (const [key, id] of [["avatar", "avatar-preview"], ["bannerDesktop", "desktop-preview"], ["bannerMobile", "mobile-preview"]]) {
-		const img = $(`#${id}`);
-		const value = $(`[data-setting="${key}"]`).value.trim();
-		img.hidden = !value;
-		img.onerror = () => { img.hidden = true; };
-		if (value) img.src = /^https?:\/\//i.test(value) ? value : `http://localhost:4321/${value.replace(/^\//, "")}`;
+	const avatar = $("#avatar-preview");
+	const avatarUrl = $('[data-setting="avatar"]').value.trim();
+	avatar.hidden = !avatarUrl;
+	avatar.onerror = () => { avatar.hidden = true; };
+	if (avatarUrl) avatar.src = /^https?:\/\//i.test(avatarUrl) ? avatarUrl : `http://localhost:4321/${avatarUrl.replace(/^\//, "")}`;
+	for (const [key, id] of [["bannerDesktop", "desktop-previews"], ["bannerMobile", "mobile-previews"]]) {
+		const input = $(`[data-setting="${key}"]`);
+		const urls = input.value.split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+		const previews = $(`#${id}`);
+		previews.replaceChildren();
+		urls.forEach((value, index) => {
+			const card = document.createElement("div");
+			card.className = "banner-preview-card";
+			const img = document.createElement("img");
+			img.src = /^https?:\/\//i.test(value) ? value : `http://localhost:4321/${value.replace(/^\//, "")}`;
+			img.alt = `${key === "bannerDesktop" ? "桌面" : "手机"}壁纸 ${index + 1}`;
+			const remove = document.createElement("button");
+			remove.type = "button";
+			remove.textContent = "删除";
+			remove.onclick = () => { input.value = urls.filter((_, i) => i !== index).join("\n"); updateImagePreviews(); };
+			card.append(img, remove);
+			previews.append(card);
+		});
 	}
 }
 
