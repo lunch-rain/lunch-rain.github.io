@@ -9,7 +9,7 @@
   "github": "https://github.com/lunch-rain",
   "bannerTitle": "欢迎来到 RainLove 的博客",
   "announcement": "欢迎来到我的博客！",
-  "siteStartDate": "2026-09-24T07:10:15Z",
+  "siteStartDate": "2026-09-24T07:10:15.000Z",
   "bannerSubtitle": [
     "In Reddened Chrysalis, I Once Rest",
     "From Shattered Sky, I Free Fall",
@@ -21,10 +21,11 @@
   "bannerDesktop": [
     "https://bu.dusays.com/2026/09/24/6ab4ad6ee23bc.jpg",
     "/uploads/1790243907161-3227fdf7.jpg",
-    "/uploads/1790243910765-793d29fc.jpg"
+    "/uploads/1790244652408-4ed31851.jpg"
   ],
   "bannerMobile": [
-    "/uploads/1790240566502-00ef5420.jpg"
+    "/uploads/1790240566502-00ef5420.jpg",
+    "/uploads/1790244665069-cfcbb521.jpg"
   ],
   "profileLinks": [
     {
