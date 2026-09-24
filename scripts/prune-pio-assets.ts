@@ -7,6 +7,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { glob } from "glob";
 import { live2dWidgetConfig, spineModelConfig } from "../src/config";
+import { mizukiPioConfig } from "../src/config/mizukiPioConfig";
 import { resolveSiteRoot } from "./site-root";
 
 // Cloudflare Pages 上产物在 dist/client，本地在 dist，统一对准真实根目录
@@ -61,6 +62,7 @@ async function findLive2dChunks(): Promise<string[]> {
 async function main() {
 	const live2dEnabled = live2dWidgetConfig.enable;
 	const spineEnabled = spineModelConfig.enable;
+	const mizukiEnabled = mizukiPioConfig.enable;
 
 	if (live2dEnabled && spineEnabled) {
 		console.log(
@@ -72,7 +74,7 @@ async function main() {
 	console.log("🎎 Pruning unused mascot assets in dist/...");
 
 	const targets: string[] = [];
-	if (!live2dEnabled && !spineEnabled) {
+	if (!live2dEnabled && !spineEnabled && !mizukiEnabled) {
 		// 都没启用，README 之类的杂项也没必要留
 		targets.push(PIO_ROOT);
 	} else {
