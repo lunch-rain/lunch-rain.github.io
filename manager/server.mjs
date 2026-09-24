@@ -1,6 +1,7 @@
 import http from "node:http";
-import { readFile, writeFile, readdir, mkdir, unlink, stat, realpath } from "node:fs/promises";
+import { readFile, writeFile, readdir, mkdir, unlink, stat, realpath, mkdtemp, cp, rm } from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
@@ -12,6 +13,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const managerDir = path.join(root, "manager");
 const postsDir = path.join(root, "src", "content", "posts");
 const settingsFile = path.join(managerDir, "site-settings.json");
+const deployConfigFile = path.join(managerDir, "deploy-config.json");
 const token = randomBytes(24).toString("hex");
 const port = Number(process.env.MANAGER_PORT || 4174);
 const gitRemote = "https://github.com/lunch-rain/lunch-rain.github.io.git";
@@ -86,11 +88,11 @@ async function readPost(id) {
 	return { id, ...parsed.data, published: dateString(parsed.data.published), updated: dateString(parsed.data.updated), body: parsed.content.trimStart() };
 }
 
-async function run(command, args, timeout = 180_000) {
+async function run(command, args, timeout = 180_000, cwd = root) {
 	return new Promise((resolve, reject) => {
 		// Git accepts an argv array directly on Windows. Sending it through cmd.exe
 		// splits a commit message containing spaces into separate pathspecs.
-		const child = spawn(command, args, { cwd: root, shell: process.platform === "win32" && command === "pnpm", windowsHide: true });
+		const child = spawn(command, args, { cwd, shell: process.platform === "win32" && command === "pnpm", windowsHide: true });
 		let output = "";
 		const timer = setTimeout(() => child.kill(), timeout);
 		for (const stream of [child.stdout, child.stderr]) stream.on("data", chunk => { output = (output + chunk.toString()).slice(-12000); });
@@ -105,27 +107,73 @@ async function run(command, args, timeout = 180_000) {
 
 async function git(...args) { return run("git", args, 120_000); }
 
-async function publishGithub() {
+const defaultDeployConfig = { staticRepoUrl: gitRemote, staticBranch: "gh-pages", sourceRepoUrl: gitRemote, sourceBranch: "main" };
+
+function validateDeployConfig(input) {
+	const config = {};
+	for (const key of ["staticRepoUrl", "sourceRepoUrl"]) {
+		const value = String(input[key] || "").trim();
+		if (!/^https:\/\/github\.com\/[a-z\d_.-]+\/[a-z\d_.-]+(?:\.git)?$/i.test(value) && !/^git@[a-z\d_.-]+:[a-z\d_.-]+\/[a-z\d_.-]+(?:\.git)?$/i.test(value)) throw new Error(`${key} 必须是 GitHub 仓库地址`);
+		config[key] = value;
+	}
+	for (const key of ["staticBranch", "sourceBranch"]) {
+		const value = String(input[key] || "").trim();
+		if (!/^[a-z\d][a-z\d._/-]*$/i.test(value) || value.includes("..") || value.includes("//") || value.endsWith("/") || value.endsWith(".lock")) throw new Error(`${key} 分支名称无效`);
+		config[key] = value;
+	}
+	if (config.staticRepoUrl === config.sourceRepoUrl && config.staticBranch === config.sourceBranch) throw new Error("静态页和源码不能使用同一仓库的同一分支");
+	return config;
+}
+
+async function deployConfig() {
+	try { return validateDeployConfig(JSON.parse(await readFile(deployConfigFile, "utf8"))); }
+	catch (error) { if (error.code === "ENOENT") return defaultDeployConfig; throw error; }
+}
+
+async function publishSource() {
+	const config = await deployConfig();
 	const logs = [];
-	logs.push("正在构建 Firefly...");
-	await run("pnpm", ["astro", "sync", "--force"], 120_000);
-	await run("pnpm", ["build"], 600_000);
 	try { await git("rev-parse", "--is-inside-work-tree"); }
 	catch { await git("init"); }
-	let remote = "";
-	try { remote = (await git("remote", "get-url", "origin")).trim(); } catch {}
-	if (remote && remote !== gitRemote) throw new Error(`当前 origin 指向 ${remote}，请先检查仓库地址。`);
-	if (!remote) await git("remote", "add", "origin", gitRemote);
 	await git("add", "-A");
 	const staged = await git("diff", "--cached", "--name-only");
 	if (staged.trim()) {
 		await git("commit", "-m", `content: update blog ${new Date().toISOString().slice(0, 10)}`);
 		logs.push("本地修改已提交");
 	} else logs.push("没有新的本地修改");
-	await git("branch", "-M", "main");
-	await git("push", "-u", "origin", "main");
-	logs.push("已推送到 GitHub。若连接了 Vercel 或启用了 Pages，对应平台会自动部署。");
+	await git("push", config.sourceRepoUrl, `HEAD:${config.sourceBranch}`);
+	logs.push(`源码已推送到 ${config.sourceBranch}。若 Vercel 已连接此仓库和分支，将自动开始构建。`);
 	return logs.join("\n");
+}
+
+async function publishPages() {
+	const config = await deployConfig();
+	await run("pnpm", ["astro", "sync", "--force"], 120_000);
+	await run("pnpm", ["build"], 600_000);
+	const temporary = await mkdtemp(path.join(os.tmpdir(), "firefly-pages-"));
+	try {
+		const pagesGit = (...args) => run("git", args, 120_000, temporary);
+		await pagesGit("init");
+		await pagesGit("remote", "add", "origin", config.staticRepoUrl);
+		let exists = false;
+		try { exists = Boolean((await pagesGit("ls-remote", "--heads", "origin", config.staticBranch)).trim()); } catch {}
+		if (exists) {
+			await pagesGit("fetch", "--depth", "1", "origin", config.staticBranch);
+			await pagesGit("checkout", "-b", config.staticBranch, "FETCH_HEAD");
+			for (const entry of await readdir(temporary)) if (entry !== ".git") await rm(path.join(temporary, entry), { recursive: true, force: true });
+		} else await pagesGit("checkout", "--orphan", config.staticBranch);
+		await cp(path.join(root, "dist"), temporary, { recursive: true, force: true });
+		await writeFile(path.join(temporary, ".nojekyll"), "", "utf8");
+		await pagesGit("add", "-A");
+		if ((await pagesGit("status", "--porcelain")).trim()) {
+			await pagesGit("commit", "-m", `Publish blog ${new Date().toISOString().slice(0, 10)}`);
+			await pagesGit("push", "origin", `HEAD:${config.staticBranch}`);
+			return `静态页已上传到 ${config.staticBranch}。请在 GitHub 仓库的 Pages 设置中选择从此分支部署。`;
+		}
+		return `静态页没有变化；${config.staticBranch} 已是最新。`;
+	} finally {
+		await rm(temporary, { recursive: true, force: true });
+	}
 }
 
 async function publishVercel() {
@@ -157,6 +205,12 @@ const server = http.createServer(async (req, res) => {
 			const posts = await Promise.all(ids.map(readPost));
 			posts.sort((a, b) => b.published.localeCompare(a.published));
 			return reply(res, 200, { posts, settings: JSON.parse(await readFile(settingsFile, "utf8")), remote: gitRemote });
+		}
+		if (req.method === "GET" && url.pathname === "/api/deploy/config") return reply(res, 200, await deployConfig());
+		if (req.method === "POST" && url.pathname === "/api/deploy/config") {
+			const config = validateDeployConfig(JSON.parse((await body(req)).toString()));
+			await writeFile(deployConfigFile, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+			return reply(res, 200, { ok: true, config });
 		}
 		if (req.method === "GET" && url.pathname === "/api/files") {
 			const groups = await Promise.all(editableRoots.map(async prefix => listSiteFiles(path.join(root, prefix), prefix)));
@@ -264,10 +318,10 @@ const server = http.createServer(async (req, res) => {
 			const input = JSON.parse((await body(req)).toString());
 			return reply(res, 200, { html: sanitizeHtml(marked.parse(String(input.body || "")), { allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img"]), allowedAttributes: { ...sanitizeHtml.defaults.allowedAttributes, img: ["src", "alt", "title"] } }) });
 		}
-		if (req.method === "POST" && (url.pathname === "/api/publish/github" || url.pathname === "/api/publish/vercel")) {
+		if (req.method === "POST" && ["/api/publish/github", "/api/publish/source", "/api/publish/pages", "/api/publish/vercel"].includes(url.pathname)) {
 			if (busy) return reply(res, 409, { error: "发布任务正在运行" });
 			busy = true;
-			try { return reply(res, 200, { ok: true, log: url.pathname.endsWith("vercel") ? await publishVercel() : await publishGithub() }); }
+			try { return reply(res, 200, { ok: true, log: url.pathname.endsWith("vercel") ? await publishVercel() : url.pathname.endsWith("pages") ? await publishPages() : await publishSource() }); }
 			finally { busy = false; }
 		}
 		return reply(res, 404, { error: "页面不存在" });

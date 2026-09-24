@@ -108,7 +108,6 @@ function render() {
 	$("#recent-list").replaceChildren(...posts.slice(0, 5).map(row));
 	const query = $("#search").value.trim().toLowerCase();
 	$("#post-list").replaceChildren(...posts.filter(post => `${post.title} ${post.category} ${post.id}`.toLowerCase().includes(query)).map(row));
-	$("#remote-url").textContent = state.remote;
 	for (const input of document.querySelectorAll("[data-setting]")) input.value = state.settings[input.dataset.setting] || "";
 	$("#profile-links").replaceChildren();
 	for (const item of state.settings.profileLinks || []) addProfileLink(item);
@@ -224,18 +223,37 @@ $("#insert-image").onclick = () => {
 };
 
 async function publish(target) {
-	const button = target === "github" ? $("#publish-github") : $("#publish-vercel");
+	const button = $(`#publish-${target}`);
 	const log = $("#publish-log");
 	button.disabled = true;
 	const original = button.textContent;
-	button.textContent = "构建并上传中…";
+	button.textContent = "正在上传…";
 	log.hidden = false;
-	log.textContent = "正在构建和发布，请勿关闭管理器。首次构建可能需要几分钟…";
-	try { log.textContent = (await api(`/api/publish/${target}`, {})).log; toast(target === "github" ? "已推送到 GitHub。" : "已发布到 Vercel。 "); }
+	log.textContent = target === "source" ? "正在提交并同步源码…" : "正在构建和发布，请勿关闭管理器。首次构建可能需要几分钟…";
+	try { log.textContent = (await api(`/api/publish/${target}`, {})).log; toast("发布操作完成，请查看日志。"); }
 	catch (error) { log.textContent = error.message; toast("发布失败，请查看日志。"); }
 	finally { button.disabled = false; button.textContent = original; }
 }
-$("#publish-github").onclick = () => publish("github");
+async function loadDeployConfig() {
+	const config = await api("/api/deploy/config");
+	$("#static-repo-url").value = config.staticRepoUrl;
+	$("#static-branch").value = config.staticBranch;
+	$("#source-repo-url").value = config.sourceRepoUrl;
+	$("#source-branch").value = config.sourceBranch;
+}
+$("#save-deploy-config").onclick = async () => {
+	try {
+		await api("/api/deploy/config", {
+			staticRepoUrl: $("#static-repo-url").value,
+			staticBranch: $("#static-branch").value,
+			sourceRepoUrl: $("#source-repo-url").value,
+			sourceBranch: $("#source-branch").value,
+		});
+		toast("发布目标已保存。");
+	} catch (error) { toast(error.message); }
+};
+$("#publish-pages").onclick = () => publish("pages");
+$("#publish-source").onclick = () => publish("source");
 $("#publish-vercel").onclick = () => publish("vercel");
 
 async function loadFileList() {
@@ -296,3 +314,4 @@ $("#delete-file").onclick = async () => {
 };
 
 refresh().catch(error => toast(error.message));
+loadDeployConfig().catch(error => toast(error.message));

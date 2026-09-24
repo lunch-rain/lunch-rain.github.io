@@ -1,6 +1,12 @@
 @echo off
+setlocal
 cd /d "%~dp0"
 title Configure Vercel Deployment
+
+set "CODEX_RUNTIME=%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies"
+if exist "%CODEX_RUNTIME%\node\bin\node.exe" if exist "%CODEX_RUNTIME%\bin\fallback\pnpm.cmd" (
+  set "PATH=%CODEX_RUNTIME%\node\bin;%CODEX_RUNTIME%\bin\fallback;%PATH%"
+)
 
 where pnpm >nul 2>&1
 if errorlevel 1 (
