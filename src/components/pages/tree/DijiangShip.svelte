@@ -4,6 +4,13 @@
 
 	let host: HTMLDivElement;
 	let error = $state("");
+	let markers: HTMLSpanElement[] = [];
+	const markerPositions = [
+		new THREE.Vector3(-1.0, -0.5, 1.5),
+		new THREE.Vector3(-1.5, -2, 1.5),
+		new THREE.Vector3(-2.3, 0, 1.5),
+		new THREE.Vector3(-2.3, -0.5, 1.5),
+	];
 
 	onMount(() => {
 		let disposed = false;
@@ -34,7 +41,8 @@
 		const resize = () => {
 			const { width, height } = host.getBoundingClientRect();
 			if (!width || !height) return;
-			floating.scale.setScalar(width < 500 ? 0.48 : width < 800 ? 0.7 : 0.82);
+			floating.scale.setScalar(width < 500 ? 0.35 : width < 800 ? 0.72 : 0.9);
+			floating.position.x = width < 500 ? 0 : 1.2;
 			camera.aspect = width / height;
 			camera.updateProjectionMatrix();
 			renderer.setSize(width, height);
@@ -87,6 +95,14 @@
 			const seconds = (performance.now() - start) / 1000;
 			floating.position.y = 0.8 + Math.sin(seconds * 2) * 0.1;
 			floating.rotation.y = Math.sin(seconds) * 0.02;
+			scene.updateMatrixWorld(true);
+			for (let i = 0; i < markerPositions.length; i++) {
+				const projected = oriented.localToWorld(markerPositions[i].clone()).project(camera);
+				const marker = markers[i];
+				if (!marker) continue;
+				marker.style.left = `${(projected.x + 1) * 50}%`;
+				marker.style.top = `${(1 - projected.y) * 50}%`;
+			}
 			if (material?.userData.shader) material.userData.shader.uniforms.uTime.value = seconds;
 			renderer.render(scene, camera);
 			frame = requestAnimationFrame(animate);
@@ -105,11 +121,22 @@
 	});
 </script>
 
-<div class="ship-canvas" bind:this={host} aria-label="帝江号黄色粒子点云舰船"></div>
+<div class="ship-canvas" bind:this={host} aria-label="帝江号黄色粒子点云舰船">
+	{#each ["post", "chatter", "moment", "message"] as kind, index}
+		<span class="beacon {kind}" bind:this={markers[index]} aria-hidden="true"></span>
+	{/each}
+</div>
 {#if error}<p class="ship-error">{error}</p>{/if}
 
 <style>
 	.ship-canvas { position: absolute; inset: 0; pointer-events: none; }
-	.ship-canvas :global(canvas) { display: block; }
+	.ship-canvas :global(canvas) { display: block; position: absolute; inset: 0; }
+	.beacon { position: absolute; z-index: 2; width: 12px; height: 12px; transform: translate(-50%, -50%) rotate(45deg); border: 3px solid #181818; box-shadow: 0 0 18px currentColor; }
+	.beacon:after { content: ""; position: absolute; inset: -12px; border: 1px solid #ffffff70; }
+	.beacon.post { background: #0ea5e9; color: #0ea5e9; }
+	.beacon.chatter { background: #eab308; color: #eab308; }
+	.beacon.moment { background: #10b981; color: #10b981; }
+	.beacon.message { background: #f1f5f9; color: #f1f5f9; }
+	@media (max-width: 760px) { .beacon { display: none; } }
 	.ship-error { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #eab308; font-size: .8rem; }
 </style>

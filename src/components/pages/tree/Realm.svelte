@@ -146,7 +146,6 @@
 			<div class="ship-glow ship-glow-gold"></div><div class="ship-glow ship-glow-blue"></div>
 			<div class="ship-identity"><h2>END-01</h2><p>CLASS: INTERSTELLAR CRUISER<br />AFFILIATION: ENDFIELD INDUSTRIES</p></div>
 			<DijiangShip />
-			<div class="ship-beacons" aria-hidden="true"><span class="beacon beacon-post"></span><span class="beacon beacon-chatter"></span><span class="beacon beacon-moment"></span><span class="beacon beacon-message"></span></div>
 			<div class="ship-controls">
 				{#if shipNotice}<div class="ship-alert">⚠ {shipNotice}</div>{/if}
 				<small>SYSTEM OVERRIDE</small>
@@ -212,8 +211,8 @@
 	.realm-toolbar{margin:0 auto 2.2rem;max-width:1000px}
 	.realm-stats,.month-nav{background:#231a16eb;border:2px solid #8b6b4a;border-radius:1rem;color:#d4af37;box-shadow:0 5px 15px #0005}
 	.realm-stats span{color:#bda786}.realm-stats strong{color:#e8e4d9}.month-nav strong{color:#d4af37}
-	.alchemy-scene{min-height:520px;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none;padding:0 1rem 2rem}
-	.alchemy-scene:before,.alchemy-heading{display:none}
+	.alchemy-scene{min-height:650px;overflow:hidden;border:1px solid #75583f;border-radius:1rem;background:radial-gradient(circle at 50% -10%,#8b6b4a 0,transparent 42%),repeating-linear-gradient(90deg,#2c211e 0,#2c211e 115px,#352823 117px,#2a201d 120px);box-shadow:inset 0 0 95px #0b0707,0 20px 40px #10101845;padding:1rem 1rem 2rem}
+	.alchemy-scene:before{display:block}.alchemy-heading{display:none}
 	.scene-topline{justify-content:flex-end;max-width:1000px;margin:0 auto;color:#8b6b4a}
 	.scene-topline>span{display:none}
 	.scene-topline button{border-color:#8b6b4a;color:#d4af37;background:#231a16}
