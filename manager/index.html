@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="manager-token" content="__TOKEN__">
+  <title>Firefly 本地管理器</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">✦</span><span>Firefly<span class="brand-small"> Studio</span></span></div>
+    <div class="side-caption">内容工作台</div>
+    <nav>
+      <button class="nav-item active" data-view="dashboard">◫ <span>概览</span></button>
+      <button class="nav-item" data-view="posts">▤ <span>文章管理</span></button>
+      <button class="nav-item" data-view="settings">⚙ <span>站点设置</span></button>
+      <button class="nav-item" data-view="files">▦ <span>全部内容与配置</span></button>
+      <button class="nav-item" data-view="publish">↗ <span>同步发布</span></button>
+    </nav>
+    <div class="side-bottom"><div class="online-dot"></div> 本地工作区 <small>数据保存在这台电脑</small></div>
+  </aside>
+  <main>
+    <header class="topbar"><div><div class="eyebrow">LUNCH-RAIN / BLOG CONSOLE</div><h1 id="page-title">早上好，lunch-rain ☀</h1><p id="page-subtitle">写下新的故事，整理你的灵感。</p></div><a class="open-blog" href="http://localhost:4321" target="_blank" rel="noopener">预览博客 ↗</a></header>
+    <section id="dashboard" class="view active">
+      <div class="hero"><div><span class="hero-label">YOUR CREATIVE SPACE</span><h2>灵感值得被记录。<br>从这里开始写作吧。</h2><p>内容先保存到本地，确认无误后再发布到 GitHub 或 Vercel。</p><button id="hero-new" class="primary">＋ 写新文章</button></div><div class="hero-art"><div class="orb one"></div><div class="orb two"></div><div class="paper">✦<br><span>Make something<br>beautiful today.</span></div></div></div>
+      <div class="stats"><div class="stat"><span>全部文章</span><strong id="count-all">0</strong><small>篇内容</small></div><div class="stat"><span>已发布</span><strong id="count-public">0</strong><small>读者可见</small></div><div class="stat"><span>草稿箱</span><strong id="count-draft">0</strong><small>继续完善</small></div></div>
+      <div class="panel"><div class="panel-heading"><div><h3>最近文章</h3><p>继续编辑最近的内容</p></div><button class="text-btn" data-go="posts">查看全部 →</button></div><div id="recent-list"></div></div>
+    </section>
+    <section id="posts" class="view"><div class="section-head"><div><h2>文章管理</h2><p>Firefly 的 Markdown 文章，直接保存在项目目录。</p></div><button id="new-post" class="primary">＋ 新建文章</button></div><div class="panel"><div class="list-tools"><input id="search" placeholder="搜索文章标题或分类…"><span id="post-total"></span></div><div id="post-list"></div></div></section>
+    <section id="editor" class="view"><div class="section-head"><div><button id="back-posts" class="back">← 返回文章</button><h2 id="editor-heading">写新文章</h2><p>保存后，博客预览会自动更新。</p></div><div class="head-actions"><button id="delete-post" class="danger ghost" hidden>删除文章</button><button id="save-post" class="primary">保存到本地</button></div></div><div class="editor-grid"><div class="panel editor-main"><label>标题<input id="post-title" placeholder="给文章取个好名字"></label><label>摘要<textarea id="post-description" rows="2" placeholder="简短介绍这篇文章…"></textarea></label><div class="editor-tabs"><button class="active" data-editor-tab="write">Markdown 编辑</button><button data-editor-tab="preview">预览</button></div><textarea id="post-body" class="body-editor" placeholder="从这里开始写作，支持 Markdown…"></textarea><div id="markdown-preview" class="markdown-preview" hidden></div><div class="editor-hint">提示：图片可通过右侧上传，链接会插入光标处。</div></div><div class="panel editor-meta"><h3>文章设置</h3><label>发布日期<input id="post-date" type="date"></label><label>分类<input id="post-category" placeholder="生活 / 技术 / 随笔"></label><label>标签 <small>用逗号分隔</small><input id="post-tags" placeholder="阅读, 旅行, 灵感"></label><label>封面图片<input id="post-image" placeholder="图片 URL 或 /uploads/..."></label><label class="upload-label">上传图片<input id="image-upload" type="file" accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label><button id="insert-image" class="secondary">插入正文图片</button><div class="checks"><label><input id="post-draft" type="checkbox"> 保存为草稿</label><label><input id="post-pinned" type="checkbox"> 置顶文章</label></div></div></div></section>
+    <section id="settings" class="view"><div class="section-head"><div><h2>站点设置</h2><p>更新博客名称、个人资料、横幅和站点地址。</p></div><button id="save-settings" class="primary">保存设置</button></div><div class="panel settings-grid"><label>博客名称<input data-setting="title"></label><label>副标题<input data-setting="subtitle"></label><label>站点网址<input data-setting="siteUrl"></label><label>作者名称<input data-setting="author"></label><label class="wide">站点描述<textarea data-setting="description" rows="3"></textarea></label><label class="wide">个人简介<textarea data-setting="bio" rows="3"></textarea></label><label>头像路径或 URL<input data-setting="avatar"></label><label>GitHub 主页<input data-setting="github"></label><label>横幅标题<input data-setting="bannerTitle"></label><label>横幅副标题<input data-setting="bannerSubtitle"></label><label>桌面横幅图片路径或 URL<input data-setting="bannerDesktop" placeholder="留空使用 Firefly 默认壁纸"></label><label>移动横幅图片路径或 URL<input data-setting="bannerMobile" placeholder="留空使用 Firefly 默认壁纸"></label><label class="wide">公告内容<textarea data-setting="announcement" rows="2"></textarea></label><label class="wide upload-label">上传站点图片（上传后复制得到的路径填入头像或横幅）<input id="settings-upload" type="file" accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label><label class="wide">最近上传图片路径<input id="settings-upload-url" readonly></label></div></section>
+    <section id="files" class="view"><div class="section-head"><div><h2>全部内容与配置</h2><p>编辑 Firefly 配置、页面、样式和 Markdown 内容，也可以新建内容文件。</p></div><button id="new-file" class="primary">＋ 新建内容</button></div><div class="file-layout"><div class="panel file-list-panel"><input id="file-search" placeholder="搜索文件路径…"><div id="file-list"></div></div><div class="panel file-editor-panel"><div class="file-toolbar"><strong id="file-path">选择左侧文件</strong><div><button id="delete-file" class="danger ghost" hidden>删除内容</button><button id="save-file" class="primary" disabled>保存文件</button></div></div><textarea id="file-content" class="body-editor" spellcheck="false" placeholder="选择文件后可编辑；新建 Markdown 内容可使用上方按钮。" disabled></textarea><p class="editor-hint">这是高级编辑区。保存后打开本地博客预览，发布前会再次构建检查。</p></div></div></section>
+    <section id="publish" class="view"><div class="section-head"><div><h2>同步发布</h2><p>先在本地预览，再选择发布到 GitHub 或 Vercel。</p></div></div><div class="publish-grid"><div class="panel publish-card"><span class="step">01 · 本地预览</span><h3>检查博客效果</h3><p>修改文章或设置后，先打开本地博客查看。</p><a class="secondary link-button" href="http://localhost:4321" target="_blank" rel="noopener">打开本地博客 ↗</a></div><div class="panel publish-card"><span class="step">02 · GitHub</span><h3>提交并推送源码</h3><p>目标仓库：<code id="remote-url"></code></p><button id="publish-github" class="primary">构建并上传 GitHub</button></div><div class="panel publish-card"><span class="step">03 · Vercel</span><h3>直接发布生产环境</h3><p>首次请双击项目里的 <code>配置Vercel.bat</code>，登录并关联项目。</p><button id="publish-vercel" class="primary">构建并发布 Vercel</button></div></div><div class="panel publish-notes"><h3>首次发布前</h3><ol><li>GitHub：创建空仓库 <code>lunch-rain.github.io</code>，并确保本机 Git 可推送。若使用 GitHub Pages，在仓库设置中选择 GitHub Actions。</li><li>Vercel：双击 <code>配置Vercel.bat</code> 登录并关联项目；之后即可使用上方按钮直接部署。</li><li>如果同时在 Vercel 连接 GitHub 仓库，推送 GitHub 也会触发 Vercel 自动部署。站点网址请在「站点设置」中改成实际对外域名。</li></ol></div><pre id="publish-log" class="log" hidden></pre></section>
+    <div id="toast" role="status" aria-live="polite"></div>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
