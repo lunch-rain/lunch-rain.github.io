@@ -195,4 +195,28 @@
 	.ship-bottom-right{position:absolute;z-index:5;right:24px;bottom:24px;width:235px;display:flex;flex-direction:column;gap:12px}.ship-summary,.ship-timeline{background:#1e1e1ee8;border:1px solid #444;backdrop-filter:blur(10px)}.ship-summary{padding:15px}.ship-summary>small{display:block;text-align:right;border-bottom:1px solid #444;padding-bottom:7px;margin-bottom:9px;color:#9297a2;font-size:.62rem;font-weight:900;letter-spacing:.2em}.ship-summary div{display:flex;justify-content:space-between;align-items:center;margin:5px 0;font-size:.72rem;font-weight:800}.ship-summary div:nth-of-type(1){color:#0ea5e9}.ship-summary div:nth-of-type(2){color:#eab308}.ship-summary div:nth-of-type(3){color:#10b981}.ship-summary div:nth-of-type(4){color:#f1f5f9}.ship-summary strong{font-size:.94rem}.ship-timeline{display:flex;align-items:center;justify-content:space-between;padding:8px 10px}.ship-timeline button{width:28px;height:28px;background:transparent;border:1px solid transparent;color:#aaa;font-size:1.45rem;cursor:pointer}.ship-timeline button:hover{border-color:#555;background:#333}.ship-timeline button:disabled{opacity:.25;cursor:default}.ship-timeline span{display:flex;flex-direction:column;text-align:center;gap:2px}.ship-timeline strong{font-size:.78rem;letter-spacing:.14em;color:white}.ship-timeline small{font-size:.55rem;color:#eab308}
 	.ship-hud{position:absolute;z-index:6;top:30%;right:28px;width:280px;max-height:250px;overflow:auto;background:#101010ed;border:1px solid #444;border-right:4px solid #eab308;padding:10px;box-shadow:0 16px 40px #0009}.ship-hud-title{display:flex;justify-content:space-between;border-bottom:1px solid #444;padding:4px 3px 10px;font-size:.67rem;font-weight:900;letter-spacing:.12em}.ship-hud-title span{color:#888}.ship-hud a{display:flex;flex-direction:column;gap:3px;margin-top:8px;padding:10px;background:#292929;color:white;border-left:2px solid #eab308;text-decoration:none}.ship-hud a small{font-size:.6rem;color:#eab308}.ship-hud a strong{font-size:.73rem}
 	@media(max-width:760px){.ship-scene{height:730px;min-height:730px}.ship-identity{left:10px;top:6px}.ship-identity h2{font-size:1.5rem}.ship-identity p{font-size:.53rem}.ship-controls{left:8px;bottom:10px}.ship-controls button{width:145px;min-height:43px;gap:5px;padding:4px}.control-icon{width:27px;height:27px}.ship-controls button strong{font-size:.67rem}.ship-controls button small{font-size:.5rem}.ship-bottom-right{right:8px;bottom:10px;width:145px}.ship-summary{padding:8px}.ship-summary div{font-size:.6rem}.ship-timeline{padding:5px}.ship-timeline strong{font-size:.58rem}.ship-hud{top:18%;right:8px;width:220px;max-height:180px}.beacon{display:none}}
+	/* Keep the workshop title and shelves close to the reference layout. */
+	.realm{max-width:1280px}
+	.realm-hero{padding:2.2rem 1rem 2rem;border:0;border-radius:0;background:transparent;box-shadow:none}
+	.realm-orbit{display:none}.realm-kicker{display:none}
+	.realm-hero h1{margin:0 0 .4rem;color:#172033;text-shadow:none;font-size:clamp(2.5rem,5vw,3.2rem);letter-spacing:.13em}
+	.realm-hero h1 span{color:#6366f1}
+	.realm-hero p{color:#586171;margin:.2rem auto 1.7rem}
+	.mode-switch{background:#ffffff66;border:1px solid #d8dce3;padding:.35rem;box-shadow:0 4px 12px #00000012}
+	.mode-switch button{color:#647084}
+	.mode-switch button.chosen{background:#fff;color:#6366f1;box-shadow:0 2px 8px #0000001a}
+	:global(html.dark) .realm-hero h1{color:#f8fafc}
+	:global(html.dark) .realm-hero p{color:#94a3b8}
+	:global(html.dark) .mode-switch{background:#1e293b66;border-color:#ffffff24}
+	:global(html.dark) .mode-switch button.chosen{background:#334155;color:#a5b4fc}
+	.realm-toolbar{margin:0 auto 2.2rem;max-width:1000px}
+	.realm-stats,.month-nav{background:#231a16eb;border:2px solid #8b6b4a;border-radius:1rem;color:#d4af37;box-shadow:0 5px 15px #0005}
+	.realm-stats span{color:#bda786}.realm-stats strong{color:#e8e4d9}.month-nav strong{color:#d4af37}
+	.alchemy-scene{min-height:520px;overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none;padding:0 1rem 2rem}
+	.alchemy-scene:before,.alchemy-heading{display:none}
+	.scene-topline{justify-content:flex-end;max-width:1000px;margin:0 auto;color:#8b6b4a}
+	.scene-topline>span{display:none}
+	.scene-topline button{border-color:#8b6b4a;color:#d4af37;background:#231a16}
+	.shelf-stage{margin:1.2rem auto 0;max-width:1000px}.shelf{height:160px;margin-bottom:0}.shelf-plank{height:14px;left:5%;right:5%;background:linear-gradient(#4a3628,#2c1e16);border-bottom:6px solid #1a110b;box-shadow:0 15px 30px -5px #000c}.shelf-plank:after{left:15%;right:auto;top:14px;width:16px;height:22px;background:#2c1e16;box-shadow:600px 0 #2c1e16}
+	.alchemy-empty{bottom:28px}
 </style>
