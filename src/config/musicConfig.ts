@@ -1,12 +1,22 @@
 import type { MusicPlayerConfig } from "../types/musicConfig";
 
+// 网易云单曲信息使用 liveling 的 Meting API；播放地址和歌词由接口按 ID 返回。
+const neteaseApi = "https://api-music.liveling.top/api";
+const neteaseSong = (id: string, name: string, artist: string, cover: string) => ({
+	name,
+	artist,
+	url: `${neteaseApi}?server=netease&type=url&id=${id}`,
+	cover,
+	lrc: `${neteaseApi}?server=netease&type=lrc&id=${id}`,
+});
+
 // 音乐播放器配置
 export const musicPlayerConfig: MusicPlayerConfig = {
 	// 是否在导航栏显示音乐播放器入口
-	showInNavbar: false,
+	showInNavbar: true,
 
 	// 是否在侧边栏显示音乐播放器组件
-	showInSidebar: false,
+	showInSidebar: true,
 
 	// 使用方式："meting" 使用 Meting API，"local" 使用本地音乐列表
 	mode: "local",
@@ -18,7 +28,7 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	playMode: "list",
 
 	// 是否显启用歌词
-	showLyrics: false,
+	showLyrics: true,
 
 	// Meting API 配置
 	meting: {
@@ -46,6 +56,10 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// 2. 或者直接填入歌词字符串内容
 	// lrc: "[00:00.00]歌词内容...",
 	local: {
-		playlist: [],
+		playlist: [
+			neteaseSong("150560", "讨厌红楼梦", "陶喆", "https://p2.music.126.net/FLIHPqpkfUBimQZB370agQ==/109951169237251638.jpg"),
+			neteaseSong("426341319", "轻飘飘的时间（8bit remix）", "烦恼的夏天", "https://p2.music.126.net/WeZ0iYNwUtH9ekxj--2lUw==/17889054184114485.jpg"),
+			neteaseSong("22803908", "天使にふれたよ!", "放課後ティータイム", "https://p1.music.126.net/iHQqvYx7hRnkGbr4alnM_w==/109951163597130578.jpg"),
+		],
 	},
 };
