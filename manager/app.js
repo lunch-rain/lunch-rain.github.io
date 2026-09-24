@@ -9,6 +9,7 @@ let editingId = null;
 let lastUpload = "";
 let files = [];
 let activeFile = "";
+let currentImageFolder = "";
 const linkPresets = {
 	GitHub: { icon: "fa7-brands:github", url: "https://github.com/lunch-rain" },
 	邮箱: { icon: "fa7-solid:envelope", url: "mailto:" },
@@ -84,12 +85,108 @@ function toast(message) {
 function view(name) {
 	document.querySelectorAll(".view").forEach(element => element.classList.toggle("active", element.id === name));
 	document.querySelectorAll(".nav-item").forEach(element => element.classList.toggle("active", element.dataset.view === name || (name === "editor" && element.dataset.view === "posts")));
-	const titles = { dashboard: ["早上好，RainLove ☀", "写下新的故事，整理你的灵感。"], posts: ["文章工作台", "在这里管理所有 Firefly 文章。"], editor: ["专注写作", "把灵感变成一篇文章。"], settings: ["我的博客", "让博客呈现你的风格。"], files: ["全部内容与配置", "每个文件都可以在这里找到。"], publish: ["准备发布", "把修改带到线上。"] };
+	const titles = { dashboard: ["早上好，RainLove ☀", "写下新的故事，整理你的灵感。"], posts: ["文章工作台", "在这里管理所有 Firefly 文章。"], images: ["图片工作台", "上传、预览并整理博客图片。"], editor: ["专注写作", "把灵感变成一篇文章。"], settings: ["我的博客", "让博客呈现你的风格。"], files: ["全部内容与配置", "每个文件都可以在这里找到。"], publish: ["准备发布", "把修改带到线上。"] };
 	$("#page-title").textContent = titles[name][0];
 	$("#page-subtitle").textContent = titles[name][1];
 	window.scrollTo(0, 0);
 	if (name === "files") loadFileList().catch(error => toast(error.message));
+	if (name === "images") loadImageLibrary().catch(error => toast(error.message));
 }
+
+async function loadImageLibrary() {
+	const result = await api(`/api/images?folder=${encodeURIComponent(currentImageFolder)}`);
+	currentImageFolder = result.folder;
+	const breadcrumbs = $("#image-breadcrumbs");
+	breadcrumbs.replaceChildren();
+	const parts = currentImageFolder.split("/").filter(Boolean);
+	for (let index = 0; index <= parts.length; index++) {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.textContent = index ? parts[index - 1] : "图片库";
+		button.disabled = index === parts.length;
+		button.onclick = () => { currentImageFolder = parts.slice(0, index).join("/"); loadImageLibrary().catch(error => toast(error.message)); };
+		breadcrumbs.append(button);
+		if (index < parts.length) breadcrumbs.append(" / ");
+	}
+	$("#image-parent").disabled = !currentImageFolder;
+	$("#image-count").textContent = `${result.folders.length} 个文件夹 · ${result.images.length} 张图片`;
+	const folderList = $("#image-folders");
+	folderList.replaceChildren();
+	for (const folder of result.folders) {
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "image-folder";
+		button.textContent = `📁 ${folder.name}`;
+		button.onclick = () => { currentImageFolder = folder.path; loadImageLibrary().catch(error => toast(error.message)); };
+		folderList.append(button);
+	}
+	const grid = $("#image-grid");
+	grid.replaceChildren();
+	for (const item of result.images) {
+		const card = document.createElement("article");
+		card.className = "image-card";
+		const img = document.createElement("img");
+		img.src = item.url;
+		img.alt = item.name;
+		img.loading = "lazy";
+		const caption = document.createElement("div");
+		const name = document.createElement("strong");
+		name.textContent = item.name;
+		name.title = item.name;
+		const size = document.createElement("small");
+		size.textContent = `${Math.max(1, Math.round(item.size / 1024))} KB`;
+		const copy = document.createElement("button");
+		copy.type = "button";
+		copy.className = "secondary";
+		copy.textContent = "复制路径";
+		copy.onclick = async () => {
+			try { await navigator.clipboard.writeText(decodeURI(item.url)); toast(`已复制：${decodeURI(item.url)}`); }
+			catch { toast(`图片路径：${decodeURI(item.url)}`); }
+		};
+		caption.append(name, size, copy);
+		card.append(img, caption);
+		grid.append(card);
+	}
+	$("#image-empty").hidden = Boolean(result.folders.length || result.images.length);
+}
+
+$("#image-parent").onclick = () => { currentImageFolder = currentImageFolder.split("/").slice(0, -1).join("/"); loadImageLibrary().catch(error => toast(error.message)); };
+$("#new-image-folder").onclick = async () => {
+	const name = prompt("新文件夹名称（支持中文、英文、数字、空格、- 和 _）");
+	if (name === null) return;
+	try {
+		const result = await api("/api/images/folder", { parent: currentImageFolder, name: name.trim() });
+		currentImageFolder = result.folder;
+		await loadImageLibrary();
+		toast("文件夹已创建。");
+	} catch (error) { toast(error.message); }
+};
+
+async function uploadLibraryImages(fileList) {
+	const images = Array.from(fileList || []);
+	if (!images.length) return;
+	let uploaded = 0;
+	for (const file of images) {
+		try {
+			if (!/^image\/(jpeg|png|webp|avif|gif)$/.test(file.type)) throw new Error(`${file.name} 不是支持的图片格式`);
+			if (file.size > 8_000_000) throw new Error(`${file.name} 超过 8 MB`);
+			$("#image-dropzone").textContent = `正在上传 ${uploaded + 1} / ${images.length}：${file.name}`;
+			const response = await fetch("/api/images/upload", { method: "POST", headers: { "content-type": file.type, "x-image-folder": encodeURIComponent(currentImageFolder), "x-manager-token": token }, body: file });
+			const result = await response.json();
+			if (!response.ok) throw new Error(result.error || "上传失败");
+			uploaded++;
+		} catch (error) { toast(error.message); }
+	}
+	$("#image-dropzone").innerHTML = '把图片拖到这里，或点击右上角“上传图片”<small>支持 JPG、PNG、WebP、AVIF、GIF；单张不超过 8 MB</small>';
+	$("#library-upload").value = "";
+	await loadImageLibrary();
+	if (uploaded) toast(`已上传 ${uploaded} 张图片到 ${currentImageFolder || "图片库"}。`);
+}
+$("#library-upload").onchange = event => uploadLibraryImages(event.target.files).catch(error => toast(error.message));
+const imageDropzone = $("#image-dropzone");
+imageDropzone.ondragover = event => { event.preventDefault(); imageDropzone.classList.add("drag-over"); };
+imageDropzone.ondragleave = () => imageDropzone.classList.remove("drag-over");
+imageDropzone.ondrop = event => { event.preventDefault(); imageDropzone.classList.remove("drag-over"); uploadLibraryImages(event.dataTransfer.files).catch(error => toast(error.message)); };
 
 function row(post) {
 	const element = document.createElement("div");

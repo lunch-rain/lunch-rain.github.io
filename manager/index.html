@@ -14,6 +14,7 @@
     <nav>
       <button class="nav-item active" data-view="dashboard">◫ <span>概览</span></button>
       <button class="nav-item" data-view="posts">▤ <span>文章管理</span></button>
+      <button class="nav-item" data-view="images">▧ <span>图片管理</span></button>
       <button class="nav-item" data-view="settings">⚙ <span>站点设置</span></button>
       <button class="nav-item" data-view="files">▦ <span>全部内容与配置</span></button>
       <button class="nav-item" data-view="publish">↗ <span>同步发布</span></button>
@@ -29,6 +30,16 @@
       <div class="panel realm-manager-card"><div><h3>✦ 灵境</h3><p>已发布的文章与动态会按月份汇入灵境。文章分类填“随笔”或“杂谈”时会放入杂谈试管；动态可在“全部内容与配置”中编辑。</p></div><a class="open-blog" href="http://localhost:4321/tree/" target="_blank" rel="noopener">预览灵境 ↗</a></div>
     </section>
     <section id="posts" class="view"><div class="section-head"><div><h2>文章管理</h2><p>Firefly 的 Markdown 文章，直接保存在项目目录。</p></div><button id="new-post" class="primary">＋ 新建文章</button></div><div class="panel"><div class="list-tools"><input id="search" placeholder="搜索文章标题或分类…"><span id="post-total"></span></div><div id="post-list"></div></div></section>
+    <section id="images" class="view">
+      <div class="section-head"><div><h2>图片管理</h2><p>按文件夹整理图片；上传后复制路径，可用于文章、头像和壁纸。</p></div><div class="head-actions"><button id="new-image-folder" class="secondary">＋ 新建文件夹</button><label class="primary image-upload-button">↑ 上传图片<input id="library-upload" type="file" multiple accept="image/png,image/jpeg,image/webp,image/avif,image/gif" hidden></label></div></div>
+      <div class="panel image-library">
+        <div class="image-library-toolbar"><button id="image-parent" class="secondary" type="button">← 上一级</button><nav id="image-breadcrumbs" aria-label="图片文件夹路径"></nav><span id="image-count"></span></div>
+        <div id="image-dropzone" class="image-dropzone">把图片拖到这里，或点击右上角“上传图片”<small>支持 JPG、PNG、WebP、AVIF、GIF；单张不超过 8 MB</small></div>
+        <div id="image-folders" class="image-folders"></div>
+        <div id="image-grid" class="image-grid"></div>
+        <p id="image-empty" class="image-empty" hidden>这里还没有图片。可以直接上传，也可以先新建文件夹。</p>
+      </div>
+    </section>
     <section id="editor" class="view"><div class="section-head"><div><button id="back-posts" class="back">← 返回文章</button><h2 id="editor-heading">写新文章</h2><p>保存后，博客预览会自动更新。</p></div><div class="head-actions"><button id="delete-post" class="danger ghost" hidden>删除文章</button><button id="save-post" class="primary">保存到本地</button></div></div><div class="editor-grid"><div class="panel editor-main"><label>标题<input id="post-title" placeholder="给文章取个好名字"></label><label>摘要<textarea id="post-description" rows="2" placeholder="简短介绍这篇文章…"></textarea></label><div class="editor-tabs"><button class="active" data-editor-tab="write">Markdown 编辑</button><button data-editor-tab="preview">预览</button></div><textarea id="post-body" class="body-editor" placeholder="从这里开始写作，支持 Markdown…"></textarea><div id="markdown-preview" class="markdown-preview" hidden></div><div class="editor-hint">提示：图片可通过右侧上传，链接会插入光标处。</div></div><div class="panel editor-meta"><h3>文章设置</h3><label>发布日期<input id="post-date" type="date"></label><label>分类<input id="post-category" placeholder="生活 / 技术 / 随笔"></label><label>标签 <small>用逗号分隔</small><input id="post-tags" placeholder="阅读, 旅行, 灵感"></label><label>封面图片<input id="post-image" placeholder="图片 URL 或 /uploads/..."></label><label class="upload-label">上传图片<input id="image-upload" type="file" accept="image/png,image/jpeg,image/webp,image/avif,image/gif"></label><button id="insert-image" class="secondary">插入正文图片</button><div class="checks"><label><input id="post-draft" type="checkbox"> 保存为草稿</label><label><input id="post-pinned" type="checkbox"> 置顶文章</label></div></div></div></section>
     <section id="settings" class="view">
       <div class="section-head"><div><h2>站点设置</h2><p>选择分类修改，保存后可立即打开本地博客预览。</p></div><button id="save-settings" class="primary">保存全部修改</button></div>

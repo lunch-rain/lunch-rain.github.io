@@ -15,6 +15,7 @@ const managerDir = path.join(root, "manager");
 const postsDir = path.join(root, "src", "content", "posts");
 const settingsFile = path.join(managerDir, "site-settings.json");
 const deployConfigFile = path.join(managerDir, "deploy-config.json");
+const imageRoot = path.join(root, "public", "uploads");
 const token = randomBytes(24).toString("hex");
 const port = Number(process.env.MANAGER_PORT || 4174);
 const gitRemote = "https://github.com/lunch-rain/lunch-rain.github.io.git";
@@ -47,6 +48,26 @@ async function listSiteFiles(directory, prefix) {
 		else if (entry.isFile() && editableExtensions.has(path.extname(entry.name).toLowerCase())) files.push(relative);
 	}
 	return files;
+}
+
+function imageFolder(folder = "") {
+	const normalized = String(folder).replaceAll("\\", "/").trim();
+	const parts = normalized ? normalized.split("/") : [];
+	if (parts.some(part => !/^[\p{L}\p{N}_ -]{1,64}$/u.test(part) || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(part.trim()))) throw new Error("图片文件夹名称无效");
+	return { normalized: parts.join("/"), resolved: path.join(imageRoot, ...parts) };
+}
+
+async function verifiedImageFolder(folder = "") {
+	await mkdir(imageRoot, { recursive: true });
+	const location = imageFolder(folder);
+	const actual = await realpath(location.resolved);
+	const rootActual = await realpath(imageRoot);
+	if (actual !== rootActual && !actual.startsWith(`${rootActual}${path.sep}`)) throw new Error("图片文件夹位于上传目录外");
+	return { ...location, resolved: actual };
+}
+
+function imageUrl(folder, filename) {
+	return `/uploads/${[...folder.split("/").filter(Boolean), filename].map(encodeURIComponent).join("/")}`;
 }
 
 function reply(res, status, data, type = "application/json; charset=utf-8") {
@@ -231,6 +252,17 @@ const server = http.createServer(async (req, res) => {
 		}
 		if (req.method === "GET" && url.pathname === "/style.css") return reply(res, 200, await readFile(path.join(managerDir, "style.css"), "utf8"), "text/css; charset=utf-8");
 		if (req.method === "GET" && url.pathname === "/app.js") return reply(res, 200, await readFile(path.join(managerDir, "app.js"), "utf8"), "text/javascript; charset=utf-8");
+		if (req.method === "GET" && url.pathname.startsWith("/uploads/")) {
+			const relative = decodeURIComponent(url.pathname.slice("/uploads/".length));
+			const pieces = relative.split("/");
+			const filename = pieces.pop();
+			const mime = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp", ".avif": "image/avif", ".gif": "image/gif" }[path.extname(filename || "").toLowerCase()];
+			if (!mime || !filename || filename === "." || filename === ".." || filename.includes("\\")) throw new Error("图片路径无效");
+			const folder = await verifiedImageFolder(pieces.join("/"));
+			const file = await realpath(path.join(folder.resolved, filename));
+			if (path.dirname(file) !== folder.resolved) throw new Error("图片路径无效");
+			return reply(res, 200, await readFile(file), mime);
+		}
 		if (req.method === "GET" && url.pathname === "/api/state") {
 			const ids = await allPosts();
 			const posts = await Promise.all(ids.map(readPost));
@@ -238,6 +270,41 @@ const server = http.createServer(async (req, res) => {
 			return reply(res, 200, { posts, settings: JSON.parse(await readFile(settingsFile, "utf8")), remote: gitRemote });
 		}
 		if (req.method === "GET" && url.pathname === "/api/deploy/config") return reply(res, 200, await deployConfig());
+		if (req.method === "GET" && url.pathname === "/api/images") {
+			const { normalized, resolved } = await verifiedImageFolder(url.searchParams.get("folder") || "");
+			const folders = [];
+			const images = [];
+			for (const item of await readdir(resolved, { withFileTypes: true })) {
+				if (item.isDirectory()) folders.push({ name: item.name, path: [normalized, item.name].filter(Boolean).join("/") });
+				else if (item.isFile() && /\.(jpe?g|png|webp|avif|gif)$/i.test(item.name)) {
+					const info = await stat(path.join(resolved, item.name));
+					images.push({ name: item.name, url: imageUrl(normalized, item.name), size: info.size });
+				}
+			}
+			folders.sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
+			images.sort((a, b) => b.name.localeCompare(a.name));
+			return reply(res, 200, { folder: normalized, parent: normalized.split("/").slice(0, -1).join("/"), folders, images });
+		}
+		if (req.method === "POST" && url.pathname === "/api/images/folder") {
+			const input = JSON.parse((await body(req)).toString());
+			const parent = await verifiedImageFolder(input.parent || "");
+			const name = String(input.name || "").trim();
+			imageFolder([parent.normalized, name].filter(Boolean).join("/"));
+			if (!name) throw new Error("请输入文件夹名称");
+			await mkdir(path.join(parent.resolved, name));
+			await writeFile(path.join(parent.resolved, name, ".gitkeep"), "", "utf8");
+			return reply(res, 200, { ok: true, folder: [parent.normalized, name].filter(Boolean).join("/") });
+		}
+		if (req.method === "POST" && url.pathname === "/api/images/upload") {
+			const folder = await verifiedImageFolder(decodeURIComponent(String(req.headers["x-image-folder"] || "")));
+			const mime = String(req.headers["content-type"] || "").split(";")[0];
+			const ext = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif", "image/gif": "gif" }[mime];
+			if (!ext) throw new Error("仅支持 JPG、PNG、WebP、AVIF、GIF 图片");
+			const bytes = await body(req, 8_000_000);
+			const filename = `${Date.now()}-${randomBytes(4).toString("hex")}.${ext}`;
+			await writeFile(path.join(folder.resolved, filename), bytes);
+			return reply(res, 200, { url: imageUrl(folder.normalized, filename) });
+		}
 		if (req.method === "POST" && url.pathname === "/api/deploy/config") {
 			const config = validateDeployConfig(JSON.parse((await body(req)).toString()));
 			await writeFile(deployConfigFile, `${JSON.stringify(config, null, 2)}\n`, "utf8");
