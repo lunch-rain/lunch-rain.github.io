@@ -202,7 +202,7 @@ const logoVariants = await Promise.all(
             <div class="flex col-start-3 justify-self-end">
                 <!--<SearchPanel client:load>-->
                 <Search
-                    client:load
+                    client:only="svelte"
                 />
                 {musicPlayerConfig.showInNavbar && (
                     <button aria-label={i18n(I18nKey.music)} aria-controls="music-nav-panel" aria-expanded="false" class="btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90" id="music-player-switch">

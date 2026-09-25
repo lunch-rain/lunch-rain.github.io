@@ -15,7 +15,7 @@ let dynamicItems = [];
 let editingDynamicId = null;
 const linkPresets = {
 	GitHub: { icon: "fa7-brands:github", url: "https://github.com/lunch-rain" },
-	QQ: { icon: "fa7-brands:qq", url: "https://wpa.qq.com/msgrd?v=3&uin=1511274638&site=qq&menu=yes" },
+	QQ: { icon: "fa7-brands:qq", url: "qq:1511274638" },
 	邮箱: { icon: "fa7-solid:envelope", url: "mailto:" },
 	RSS: { icon: "fa7-solid:rss", url: "/rss/" },
 	Atom: { icon: "fa7-solid:atom", url: "/atom/" },

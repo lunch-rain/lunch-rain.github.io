@@ -53,44 +53,50 @@ const className = Astro.props.class;
       {profileConfig.bio}
     </div>
         <div class="flex flex-wrap gap-2 justify-center mb-1">
-            {profileConfig.links.length > 1 && profileConfig.links.map(item =>
-                    {
-                    const showName = item.showName;
-                    const className = showName 
-                        ? "btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95" 
-                        : "btn-regular rounded-lg h-10 w-10 active:scale-90";
-
-                    if (item.url.startsWith("mailto:")) {
-                        const encodedEmail = encodeMailto(item.url);
-                        return <a rel="me" aria-label={item.name} href="#" data-encoded-email={encodedEmail} onclick={MAILTO_ONCLICK_SCRIPT},
-                                    class={className}>
-                            <Icon name={item.icon} class="text-[1.5rem]"></Icon>
-                            {showName && item.name}
-                        </a>
-                    } else {
-                        return <a rel="me" aria-label={item.name} href={item.url} target="_blank" class={className}>
-                            <Icon name={item.icon} class="text-[1.5rem]"></Icon>
-                            {showName && item.name}
-                        </a>
-                    }
-                    }
-            )}
-            {profileConfig.links.length == 1 && (function(item){
+            {profileConfig.links.map((item) => {
+                const showName = profileConfig.links.length === 1 || item.showName;
+                const className = showName
+                    ? "btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95"
+                    : "btn-regular rounded-lg h-10 w-10 active:scale-90";
+                if (item.url.startsWith("qq:")) {
+                    const qq = item.url.slice(3);
+                    return <button type="button" aria-label={`点击复制 QQ 号 ${qq}`} title={`点击复制 QQ 号 ${qq}`} data-copy-qq={qq} class={className}>
+                        <Icon name={item.icon} class="text-[1.5rem]" />
+                        {showName && item.name}
+                    </button>;
+                }
                 if (item.url.startsWith("mailto:")) {
-                        const encodedEmail = encodeMailto(item.url);
-                        return <a rel="me" aria-label={item.name} href="#" data-encoded-email={encodedEmail} onclick={MAILTO_ONCLICK_SCRIPT},
-                                    class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95">
-                            <Icon name={item.icon} class="text-[1.5rem]"></Icon>
-                            {item.name}
-                        </a>
-                    } else {
-                        return <a rel="me" aria-label={item.name} href={item.url} target="_blank"
-                                            class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95">
-                                <Icon name={item.icon} class="text-[1.5rem]"></Icon>
-                                {item.name}
-                            </a>
-                    }
-            })(profileConfig.links[0])}
+                    return <a rel="me" aria-label={item.name} href="#" data-encoded-email={encodeMailto(item.url)} onclick={MAILTO_ONCLICK_SCRIPT} class={className}>
+                        <Icon name={item.icon} class="text-[1.5rem]" />
+                        {showName && item.name}
+                    </a>;
+                }
+                return <a rel="me noopener noreferrer" aria-label={item.name} href={item.url} target="_blank" class={className}>
+                    <Icon name={item.icon} class="text-[1.5rem]" />
+                    {showName && item.name}
+                </a>;
+            })}
         </div>
+        <p data-qq-copy-feedback class="text-center text-xs text-(--primary) min-h-4" role="status" aria-live="polite"></p>
   </div>
 </div>
+
+<script is:inline>
+    if (!window.__qqCopyHandlerInstalled) {
+        window.__qqCopyHandlerInstalled = true;
+        document.addEventListener('click', async (event) => {
+            const button = event.target instanceof Element ? event.target.closest('[data-copy-qq]') : null;
+            if (!button) return;
+            const qq = button.getAttribute('data-copy-qq');
+            if (!qq) return;
+            const feedback = button.closest('.card-base')?.querySelector('[data-qq-copy-feedback]');
+            try {
+                if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+                await navigator.clipboard.writeText(qq);
+                if (feedback) feedback.textContent = `已复制 QQ 号 ${qq}`;
+            } catch {
+                if (feedback) feedback.textContent = `复制失败，QQ 号：${qq}`;
+            }
+        });
+    }
+</script>

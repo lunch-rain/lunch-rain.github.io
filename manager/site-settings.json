@@ -37,7 +37,7 @@
     {
       "name": "QQ",
       "icon": "fa7-brands:qq",
-      "url": "https://wpa.qq.com/msgrd?v=3&uin=1511274638&site=qq&menu=yes",
+      "url": "qq:1511274638",
       "showName": false
     },
     {
