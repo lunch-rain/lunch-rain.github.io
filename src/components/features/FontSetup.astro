@@ -74,6 +74,7 @@ const codeFontFamily = codeFontVar
 <style
   set:html={`
   :root {
+	--font-site: ${bodyFontFamily};
     --font-code: ${codeFontFamily};
     ${bannerTitleFontVar ? `--font-banner-title: var(${bannerTitleFontVar}, inherit);` : ""}
     ${bannerSubtitleFontVar ? `--font-banner-subtitle: var(${bannerSubtitleFontVar}, inherit);` : ""}
@@ -87,7 +88,7 @@ const codeFontFamily = codeFontVar
 			navbarTitleFontVar ||
 			selectedFontVars.length > 0)
 			? `body {
-      font-family: ${bodyFontFamily};
+      font-family: var(--font-site);
     }`
 			: ""
 	}

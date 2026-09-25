@@ -18,8 +18,19 @@
 /* Tailwind v4 配置 - 从 tailwind.config.cjs 迁移 */
 @theme {
   --font-sans:
-    var(--font-zen-maru-gothic), 'Microsoft YaHei', ui-sans-serif, system-ui, sans-serif,
+    var(--font-site), 'Microsoft YaHei', ui-sans-serif, system-ui, sans-serif,
     'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+/* The same typeface applies to current and future Markdown articles, dynamics, and controls. */
+body,
+button,
+input,
+select,
+textarea,
+.custom-md,
+.prose {
+  font-family: var(--font-site, 'Microsoft YaHei', system-ui, sans-serif);
 }
 
 /* 自定义工具类 - Tailwind v4 使用 @utility 定义 */
