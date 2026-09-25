@@ -3,10 +3,33 @@
   <id>https://lunch-rain.github.io/</id>
   <title type="text">RainLove の blog</title>
   <subtitle type="text">RainLove 的个人博客，记录生活、学习与灵感。</subtitle>
-  <updated>2026-09-24T14:33:49.377Z</updated>
+  <updated>2026-09-25T00:00:00.000Z</updated>
   <author><name>RainLove</name></author>
   <link rel="alternate" href="https://lunch-rain.github.io/"/>
   <link rel="self" href="https://lunch-rain.github.io/atom.xml"/>
   <generator uri="https://github.com/CuteLeaf/Firefly">Firefly v6.16.8</generator>
-
+    <entry>
+      <id>https://lunch-rain.github.io/posts/blog-workflow-guide-2026-09-25/</id>
+      <title type="text">我的博客使用手册：从写作到发布</title>
+      <published>2026-09-25T00:00:00.000Z</published>
+      <updated>2026-09-25T00:00:00.000Z</updated>
+      <author><name>RainLove</name></author>
+      <link rel="alternate" href="https://lunch-rain.github.io/posts/blog-workflow-guide-2026-09-25/"/>
+      <summary type="text">给未来的自己留一份简明操作指南：写文章、发动态、管理图片、预览和同步发布。</summary>
+      <content type="html"><![CDATA[<p>博客搭好了，最重要的是以后能轻松地用起来。这篇文章是一份给自己的速查表：想写点东西时，从哪里开始；改完后，怎样确认线上也更新了。</p>
+<section><h2>写文章：先写下来，再整理<a href="#写文章先写下来再整理"><span>#</span></a></h2><ol>
+<li>双击项目文件夹里的 <strong><code>启动管理器.bat</code></strong>，打开本地管理器。</li>
+<li>进入 <strong>文章管理 → 新建文章</strong>，填写标题、摘要和正文。正文支持 Markdown：用 <code>##</code> 写小标题，用 <code>-</code> 写列表。</li>
+<li>需要配图时，直接在文章编辑页上传；如果想把图片按主题整理，去 <strong>图片管理</strong> 新建文件夹，再复制图片路径插入正文。</li>
+<li>点击 <strong>保存到本地</strong>，打开管理器右上角的 <strong>预览博客</strong>，检查排版、链接和图片。</li>
+</ol><p>不用等内容“足够完整”才开始写。可以先记下一件事、一个问题和自己的解决过程，以后再回来补充。</p></section>
+<section><h2>短想法发动态，照片放相册<a href="#短想法发动态照片放相册"><span>#</span></a></h2><p>只有几句话时，进入 <strong>动态发布</strong>。可以写当天的想法、添加图片、设置时间和地点；点击预览确认后，用 <strong>保存并发布</strong> 同步到线上。</p><p>照片如果只是给文章、头像或壁纸使用，放在 <strong>图片管理</strong> 即可。博客的 <strong>相册</strong> 页面会展示默认“图片库”，也可以在 <strong>相册管理</strong> 中创建单独的相册，填写名称、描述、标签和封面。删除图片前先检查文章或设置中是否引用了它，否则对应位置会显示不出来。</p></section>
+<section><h2>发布前，花一分钟检查<a href="#发布前花一分钟检查"><span>#</span></a></h2><ul>
+<li>本地预览里，标题、正文、图片都正常。</li>
+<li>手机宽度下，重要内容没有被遮住。</li>
+<li>链接能打开，文章没有误设为草稿。</li>
+<li>留言或动态中的文字没有暴露不想公开的个人信息。</li>
+</ul><p>文章或设置保存后，进入管理器的 <strong>同步发布</strong>：先编译并推送 <strong>GitHub Pages</strong> 静态页，再同步源码到 GitHub 的 <code>main</code> 分支。Vercel 连接该分支后会自动构建。看到“本地正常、线上还是旧版”时，先确认这两步是否都成功，再刷新线上页面。</p></section>
+<section><h2>给自己留一条简单的写作规则<a href="#给自己留一条简单的写作规则"><span>#</span></a></h2><p>每次只回答三个问题：<strong>发生了什么？我做了什么？下次怎样更快完成？</strong> 即使是一篇很短的记录，也可能在几个月后帮自己省下重新摸索的时间。</p><p>这篇手册也会随着博客一起更新。以后管理方式有变化，就直接在管理器的文章列表里编辑它。</p></section>]]></content>
+    </entry>
 </feed>
