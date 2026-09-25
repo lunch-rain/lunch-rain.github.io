@@ -1,8 +1,8 @@
 ---
-title: "RainLove 博客使用手册：写作、配图与发布"
-published: 2026-09-25
-description: "给未来的自己留一份能照着做的指南：选择内容类型、上传图片、检查预览、发布，以及排查线上旧版。"
-category: "博客指南"
+title: RainLove 博客使用手册：写作、配图与发布
+published: '2026-09-25'
+description: 给未来的自己留一份能照着做的指南：选择内容类型、上传图片、检查预览、发布，以及排查线上旧版。
+category: 博客指南
 tags:
   - 写作
   - 发布
@@ -11,6 +11,7 @@ draft: false
 pinned: false
 author: RainLove
 comment: true
+image: /uploads/1790331036517-d065eec7.jpg
 ---
 
 这篇文章写给以后想更新博客、却忘了操作步骤的自己。记住一句话就够了：**先在本地保存并预览，再把改动发布到线上。** “保存到本地”不会自动更新网站。
