@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="2.0">
+  <head><title>RainLove 的 AI 与 GitHub 订阅</title></head>
+  <body>
+    <outline text="AI">
+      <outline type="rss" text="OpenAI 最新动态" title="OpenAI 最新动态" description="模型、产品与研究的官方更新。" xmlUrl="https://openai.com/news/rss.xml" htmlUrl="https://openai.com/news/" />
+      <outline type="rss" text="Hugging Face 博客" title="Hugging Face 博客" description="开源模型、工具和实用教程。" xmlUrl="https://huggingface.co/blog/feed.xml" htmlUrl="https://huggingface.co/blog" />
+      <outline type="rss" text="Hacker News · AI 热门" title="Hacker News · AI 热门" description="近期获得至少 50 点热度的 AI 讨论。" xmlUrl="https://hnrss.org/newest?q=AI&amp;points=50" htmlUrl="https://news.ycombinator.com/" />
+    </outline>
+    <outline text="GitHub">
+      <outline type="rss" text="GitHub 每日热门项目" title="GitHub 每日热门项目" description="每天更新的 GitHub Trending 仓库。" xmlUrl="https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml" htmlUrl="https://github.com/trending" />
+      <outline type="rss" text="GitHub 官方博客" title="GitHub 官方博客" description="开发工具、开源社区和 GitHub 产品动态。" xmlUrl="https://github.blog/feed/" htmlUrl="https://github.blog/" />
+    </outline>
+  </body>
+</opml>
