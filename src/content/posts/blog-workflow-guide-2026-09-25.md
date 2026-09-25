@@ -1,6 +1,6 @@
 ---
 title: RainLove 博客使用手册：写作、配图与发布
-published: '2026-09-25'
+published: 2026-09-25
 description: 给未来的自己留一份能照着做的指南：选择内容类型、上传图片、检查预览、发布，以及排查线上旧版。
 category: 博客指南
 tags:

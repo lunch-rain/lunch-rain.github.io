@@ -28,7 +28,7 @@ let blogRestart = null;
 
 function startBlog() {
 	if (process.env.MANAGER_NO_BLOG === "1") return;
-	const child = spawn("pnpm", ["dev", "--host", "127.0.0.1", "--port", "4321", "--strictPort"], { cwd: root, shell: process.platform === "win32", stdio: "inherit", windowsHide: true });
+	const child = spawn("pnpm", ["dev", "--host", "127.0.0.1", "--port", "4321", "--force"], { cwd: root, shell: process.platform === "win32", stdio: "inherit", windowsHide: true });
 	blog = child;
 	child.on("error", error => console.error("博客启动失败：", error.message));
 	child.on("close", () => { if (blog === child) blog = null; });
@@ -38,6 +38,10 @@ async function restartBlog() {
 	if (process.env.MANAGER_NO_BLOG === "1") throw new Error("管理器未启动博客预览，请双击“启动管理器.bat”重新启动");
 	if (blogRestart) return blogRestart;
 	blogRestart = (async () => {
+		// Astro 7 can keep a background server after the pnpm child exits.
+		// Stop the daemon for this project as well, or the old content cache survives.
+		try { await run("pnpm", ["astro", "dev", "stop"], 30_000); }
+		catch (error) { console.warn("停止旧预览时跳过：", error.message); }
 		const previous = blog;
 		if (previous?.pid) {
 			if (process.platform === "win32") {
@@ -560,6 +564,8 @@ const server = http.createServer(async (req, res) => {
 		if (req.method === "POST" && url.pathname === "/api/post") {
 			const input = JSON.parse((await body(req)).toString());
 			if (!String(input.title || "").trim()) throw new Error("请填写文章标题");
+			const published = dateString(input.published) || new Date().toISOString().slice(0, 10);
+			if (!/^\d{4}-\d{2}-\d{2}$/.test(published) || Number.isNaN(Date.parse(`${published}T00:00:00.000Z`))) throw new Error("发布日期无效");
 			const id = input.id ? String(input.id) : `post-${Date.now()}.md`;
 			const file = safeId(id);
 			let previous = {};
@@ -567,7 +573,7 @@ const server = http.createServer(async (req, res) => {
 			const data = {
 				...previous,
 				title: String(input.title).trim(),
-				published: dateString(input.published) || new Date().toISOString().slice(0, 10),
+				published: new Date(`${published}T00:00:00.000Z`),
 				description: String(input.description || ""),
 				image: String(input.image || ""),
 				category: String(input.category || ""),
