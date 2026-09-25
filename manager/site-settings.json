@@ -35,6 +35,12 @@
       "showName": false
     },
     {
+      "name": "QQ",
+      "icon": "fa7-brands:qq",
+      "url": "https://wpa.qq.com/msgrd?v=3&uin=1511274638&site=qq&menu=yes",
+      "showName": false
+    },
+    {
       "name": "RSS",
       "icon": "fa7-solid:rss",
       "url": "/rss/",
