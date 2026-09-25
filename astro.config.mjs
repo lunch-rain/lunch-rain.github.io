@@ -1,5 +1,6 @@
 import { setMaxListeners } from "node:events";
 import cloudflare from "@astrojs/cloudflare";
+import vercel from "@astrojs/vercel/serverless";
 import { unified } from "@astrojs/markdown-remark";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
@@ -63,7 +64,11 @@ const adapter = process.env.CF_WORKERS
 	? cloudflare({
 			prerenderEnvironment: "node",
 		})
-	: undefined;
+	: vercel({
+			webAnalytics: {
+				enabled: true,
+			},
+		});
 
 // https://astro.build/config
 export default defineConfig({
