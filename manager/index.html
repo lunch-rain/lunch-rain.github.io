@@ -86,7 +86,7 @@
         </div>
       </div>
       <div class="publish-grid">
-        <div class="panel publish-card"><span class="step">01 · 本地预览</span><h3>检查博客效果</h3><p>修改文章或设置后，打开本地博客查看。</p><a class="secondary link-button" href="http://localhost:4321" target="_blank" rel="noopener">打开本地博客 ↗</a></div>
+        <div class="panel publish-card"><span class="step">01 · 本地预览</span><h3>检查博客效果</h3><p>修改文章或设置后，打开本地博客查看。若文章没有出现，点击刷新预览。</p><a class="secondary link-button" href="http://localhost:4321" target="_blank" rel="noopener">打开本地博客 ↗</a><button id="restart-preview" class="secondary" type="button">刷新本地预览</button></div>
         <div class="panel publish-card"><span class="step">02 · GitHub Pages</span><h3>编译并推送静态页</h3><p>构建网站，将生成的网页上传到静态页分支。</p><button id="publish-pages" class="primary">编译并推静态页</button></div>
         <div class="panel publish-card"><span class="step">03 · Vercel 源码</span><h3>只同步源码</h3><p>提交并推送本地源码。Vercel 连接仓库后会自动构建。</p><button id="publish-source" class="primary">同步源码到 GitHub</button></div>
         <div class="panel publish-card"><span class="step">04 · Vercel 直发</span><h3>直接发布生产环境</h3><p>首次双击 <code>配置Vercel.bat</code> 登录并关联项目。</p><button id="publish-vercel" class="secondary">直接发布 Vercel</button></div>

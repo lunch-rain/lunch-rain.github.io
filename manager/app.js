@@ -77,6 +77,15 @@ async function api(path, data) {
 	return result;
 }
 
+$("#restart-preview").onclick = async () => {
+	const button = $("#restart-preview");
+	button.disabled = true;
+	button.textContent = "正在刷新…";
+	try { await api("/api/preview/restart", {}); toast("本地预览已刷新，文章现在可以显示。"); }
+	catch (error) { toast(error.message); }
+	finally { button.disabled = false; button.textContent = "刷新本地预览"; }
+};
+
 function toast(message) {
 	const element = $("#toast");
 	element.textContent = message;

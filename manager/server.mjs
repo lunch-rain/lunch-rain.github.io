@@ -23,6 +23,45 @@ const token = randomBytes(24).toString("hex");
 const port = Number(process.env.MANAGER_PORT || 4174);
 const gitRemote = "https://github.com/lunch-rain/lunch-rain.github.io.git";
 let busy = false;
+let blog = null;
+let blogRestart = null;
+
+function startBlog() {
+	if (process.env.MANAGER_NO_BLOG === "1") return;
+	const child = spawn("pnpm", ["dev", "--host", "127.0.0.1", "--port", "4321", "--strictPort"], { cwd: root, shell: process.platform === "win32", stdio: "inherit", windowsHide: true });
+	blog = child;
+	child.on("error", error => console.error("博客启动失败：", error.message));
+	child.on("close", () => { if (blog === child) blog = null; });
+}
+
+async function restartBlog() {
+	if (process.env.MANAGER_NO_BLOG === "1") throw new Error("管理器未启动博客预览，请双击“启动管理器.bat”重新启动");
+	if (blogRestart) return blogRestart;
+	blogRestart = (async () => {
+		const previous = blog;
+		if (previous?.pid) {
+			if (process.platform === "win32") {
+				await new Promise(resolve => {
+					const killer = spawn("taskkill", ["/PID", String(previous.pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" });
+					killer.on("error", resolve);
+					killer.on("close", resolve);
+				});
+			} else previous.kill("SIGTERM");
+		}
+		// Wait until the previous server releases 4321 before starting its replacement.
+		await new Promise(resolve => setTimeout(resolve, 700));
+		startBlog();
+		for (let attempt = 0; attempt < 30; attempt++) {
+			try {
+				const response = await fetch("http://127.0.0.1:4321/api/allPostMeta.json", { signal: AbortSignal.timeout(1500) });
+				if (response.ok) return;
+			} catch { /* Astro is still starting. */ }
+			await new Promise(resolve => setTimeout(resolve, 500));
+		}
+		throw new Error("本地博客预览未能在 4321 端口启动，请检查管理器窗口中的报错");
+	})();
+	try { await blogRestart; } finally { blogRestart = null; }
+}
 const editableExtensions = new Set([".md", ".mdx", ".ts", ".tsx", ".astro", ".svelte", ".css", ".styl", ".json", ".html", ".svg", ".mjs", ".js", ".txt"]);
 const editableRoots = ["src/config", "src/content", "src/pages", "src/components", "src/layouts", "src/styles", "public"];
 
@@ -316,6 +355,10 @@ const server = http.createServer(async (req, res) => {
 			posts.sort((a, b) => b.published.localeCompare(a.published));
 			return reply(res, 200, { posts, settings: JSON.parse(await readFile(settingsFile, "utf8")), remote: gitRemote });
 		}
+		if (req.method === "POST" && url.pathname === "/api/preview/restart") {
+			await restartBlog();
+			return reply(res, 200, { ok: true });
+		}
 		if (req.method === "GET" && url.pathname === "/api/dynamics") {
 			const ids = (await allPosts(dynamicDir)).filter(id => id.endsWith(".md"));
 			const items = await Promise.all(ids.map(readDynamic));
@@ -332,6 +375,7 @@ const server = http.createServer(async (req, res) => {
 			const file = dynamicFile(id);
 			await mkdir(path.dirname(file), { recursive: true });
 			await writeFile(file, matter.stringify(`\n${content}\n`, { published: date, pinned: Boolean(input.pinned), location: String(input.location || "").trim().slice(0, 120) }), "utf8");
+			if (process.env.MANAGER_NO_BLOG !== "1") await restartBlog();
 			return reply(res, 200, { ok: true, id });
 		}
 		if (req.method === "POST" && url.pathname === "/api/dynamic/delete") {
@@ -339,6 +383,7 @@ const server = http.createServer(async (req, res) => {
 			const file = dynamicFile(input.id);
 			await verifyExistingPath(file);
 			await unlink(file);
+			if (process.env.MANAGER_NO_BLOG !== "1") await restartBlog();
 			return reply(res, 200, { ok: true });
 		}
 		if (req.method === "GET" && url.pathname === "/api/deploy/config") return reply(res, 200, await deployConfig());
@@ -500,6 +545,7 @@ const server = http.createServer(async (req, res) => {
 				}
 			}
 			await writeFile(resolved, content, "utf8");
+			if (normalized.startsWith("src/content/") && process.env.MANAGER_NO_BLOG !== "1") await restartBlog();
 			return reply(res, 200, { ok: true, path: normalized });
 		}
 		if (req.method === "POST" && url.pathname === "/api/file/delete") {
@@ -508,6 +554,7 @@ const server = http.createServer(async (req, res) => {
 			if (!normalized.startsWith("src/content/")) throw new Error("只能在这里删除内容文件");
 			await verifyExistingPath(resolved);
 			await unlink(resolved);
+			if (process.env.MANAGER_NO_BLOG !== "1") await restartBlog();
 			return reply(res, 200, { ok: true });
 		}
 		if (req.method === "POST" && url.pathname === "/api/post") {
@@ -530,11 +577,13 @@ const server = http.createServer(async (req, res) => {
 			};
 			await mkdir(path.dirname(file), { recursive: true });
 			await writeFile(file, matter.stringify(`\n${String(input.body || "").trim()}\n`, data), "utf8");
+			if (process.env.MANAGER_NO_BLOG !== "1") await restartBlog();
 			return reply(res, 200, { ok: true, id });
 		}
 		if (req.method === "POST" && url.pathname === "/api/delete") {
 			const input = JSON.parse((await body(req)).toString());
 			await unlink(safeId(String(input.id)));
+			if (process.env.MANAGER_NO_BLOG !== "1") await restartBlog();
 			return reply(res, 200, { ok: true });
 		}
 		if (req.method === "POST" && url.pathname === "/api/settings") {
@@ -598,8 +647,4 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(port, "127.0.0.1", () => console.log(`Firefly 管理器：http://localhost:${port}`));
-if (process.env.MANAGER_NO_BLOG !== "1") {
-	const blog = spawn("pnpm", ["dev", "--host", "127.0.0.1"], { cwd: root, shell: process.platform === "win32", stdio: "inherit", windowsHide: true });
-	blog.on("error", error => console.error("博客启动失败：", error.message));
-	process.on("SIGINT", () => blog.kill());
-}
+startBlog();
