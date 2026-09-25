@@ -68,6 +68,12 @@
 		return `${year} 年 ${Number(month)} 月`;
 	}
 
+	function fillLevel(id: string) {
+		let hash = 0;
+		for (const character of id) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+		return 48 + (hash % 34);
+	}
+
 	function selectShipChannel(kind: string) {
 		if (kind === "message") {
 			window.location.href = "/guestbook/";
@@ -124,12 +130,17 @@
 			{/if}
 			<div class="shelf-stage">
 				{#each [0, 1, 2] as shelf}
-					<div class="shelf">
+					<div class="shelf" style={`z-index:${3 - shelf}`}>
 						<div class="shelf-items">
 							{#each monthEntries.slice(shelf * 7, shelf * 7 + 7) as entry (entry.id)}
-								<a class="flask" class:post={entry.kind === "post"} class:chatter={entry.kind === "chatter"} class:moment={entry.kind === "moment"} href={entry.href} title={entry.title}>
-									<span class="flask-neck"></span><span class="flask-glass"><span class="flask-liquid"></span><span class="flask-shine"></span></span>
-									<span class="flask-label">{entry.title}</span>
+								<a class="flask" class:post={entry.kind === "post"} class:chatter={entry.kind === "chatter"} class:moment={entry.kind === "moment"} href={entry.href} aria-label={`${labels[entry.kind] || "记录"}：${entry.title}`} style={`--fill:${fillLevel(entry.id)}%`}>
+									<span class="flask-aura" aria-hidden="true"></span>
+									<span class="flask-cork" aria-hidden="true"></span>
+									<span class="flask-body" aria-hidden="true">
+										<span class="flask-liquid"><svg viewBox="0 0 200 100" preserveAspectRatio="none"><path class="flask-wave-one" d="M 0 15 Q 25 5 50 15 T 100 15 T 150 15 T 200 15 L 200 100 L 0 100 Z" /><path class="flask-wave-two" d="M 0 20 Q 25 30 50 20 T 100 20 T 150 20 T 200 20 L 200 100 L 0 100 Z" /></svg><i></i><i></i></span>
+										<span class="flask-shine"></span>
+									</span>
+									<span class="flask-tooltip" role="presentation"><small>— {labels[entry.kind] || "记录"} —</small><strong>{entry.title}</strong><em>{entry.kind === "moment" ? "点击查看动态" : "点击阅读"}</em></span>
 								</a>
 							{/each}
 						</div>
@@ -218,4 +229,27 @@
 	.scene-topline button{border-color:#8b6b4a;color:#d4af37;background:#231a16}
 	.shelf-stage{margin:1.2rem auto 0;max-width:1000px}.shelf{height:160px;margin-bottom:0}.shelf-plank{height:14px;left:5%;right:5%;background:linear-gradient(#4a3628,#2c1e16);border-bottom:6px solid #1a110b;box-shadow:0 15px 30px -5px #000c}.shelf-plank:after{left:15%;right:auto;top:14px;width:16px;height:22px;background:#2c1e16;box-shadow:600px 0 #2c1e16}
 	.alchemy-empty{bottom:28px}
+	/* Match the source potion: a narrow glass body with a separate springing cork. */
+	.flask{position:relative;display:block;flex:none;width:56px;height:76px;margin-bottom:1px;z-index:10;filter:drop-shadow(0 4px 6px color-mix(in srgb,var(--fluid),transparent 73%));transform-origin:50% 85%;transition:transform .28s ease,filter .28s ease}
+	.flask:hover,.flask:focus-visible{z-index:100;transform:translateY(-10px) scale(1.15);filter:drop-shadow(0 5px 11px color-mix(in srgb,var(--fluid),transparent 48%));outline:none}
+	.flask:focus-visible .flask-body{outline:2px solid #e8d89b;outline-offset:3px}
+	.flask-cork{position:absolute;z-index:30;top:-6px;left:20px;width:16px;height:12px;border-radius:3px 3px 1px 1px;border-bottom:1px solid #3e2723;background:#5d4037;box-shadow:0 2px 5px #0008;transform-origin:bottom left;transition:transform .42s cubic-bezier(.2,1.5,.5,1)}
+	.flask:hover .flask-cork,.flask:focus-visible .flask-cork{transform:translate(12px,-14px) rotate(45deg)}
+	.flask-body{position:absolute;z-index:10;inset:0;display:block;overflow:hidden;clip-path:polygon(38% 0,62% 0,62% 35%,95% 90%,85% 100%,15% 100%,5% 90%,38% 35%);background:#ffffff14;border:1px solid #ffffff55;backdrop-filter:blur(2px);box-shadow:inset 0 0 15px color-mix(in srgb,var(--fluid),transparent 80%)}
+	.flask-body:after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 2px 0 4px #ffffff5e,inset -2px 0 3px #ffffff30}
+	.flask-liquid{position:absolute;left:0;right:0;bottom:0;height:var(--fill);display:block;overflow:hidden;color:var(--fluid);transition:height .9s ease}
+	.flask-liquid svg{position:absolute;bottom:0;left:0;width:200%;height:100%;animation:potion-wave 3s linear infinite}
+	.flask-wave-one{fill:currentColor;opacity:.6}.flask-wave-two{fill:currentColor;opacity:.9}
+	.flask-liquid i{position:absolute;bottom:5px;width:5px;height:5px;border-radius:50%;background:#ffffff9e;animation:potion-bubble 2s ease-in infinite}.flask-liquid i:first-of-type{left:31%}.flask-liquid i:last-of-type{left:65%;width:4px;height:4px;animation-delay:.6s}
+	.flask-shine{position:absolute;top:15%;left:25%;width:6px;height:30px;border-radius:50%;background:#ffffff75;transform:rotate(15deg);filter:blur(.5px)}
+	.flask-aura{position:absolute;z-index:0;top:-15px;left:34%;width:18px;height:18px;border-radius:50%;background:var(--fluid);filter:blur(10px);opacity:0;transition:opacity .25s;pointer-events:none}.flask:hover .flask-aura,.flask:focus-visible .flask-aura{opacity:.75;animation:potion-aura 1.5s ease-out infinite}
+	.flask-tooltip{position:absolute;z-index:120;top:115%;left:50%;width:max-content;min-width:190px;max-width:240px;padding:13px 15px;border:1px solid #8b6b4a99;border-radius:7px;background:#231a16f2;color:#e8e4d9;box-shadow:0 10px 30px #000c;text-align:center;pointer-events:none;opacity:0;visibility:hidden;transform:translate(-50%,-8px) scale(.92);transition:opacity .22s,transform .22s,visibility .22s}
+	.flask-tooltip:before{content:"";position:absolute;top:-6px;left:calc(50% - 6px);width:11px;height:11px;border-top:1px solid #8b6b4a99;border-left:1px solid #8b6b4a99;background:#231a16;transform:rotate(45deg)}
+	.flask:hover .flask-tooltip,.flask:focus-visible .flask-tooltip{opacity:1;visibility:visible;transform:translate(-50%,0) scale(1)}
+	.flask-tooltip small,.flask-tooltip strong,.flask-tooltip em{display:block}.flask-tooltip small{color:var(--fluid);font-size:.61rem;font-weight:900;letter-spacing:.15em}.flask-tooltip strong{margin:.45rem 0;font-size:.85rem;line-height:1.45}.flask-tooltip em{font-size:.56rem;color:#b7a386;font-style:normal;letter-spacing:.16em}
+	.flask:first-child .flask-tooltip{left:-16px;transform:translateY(-8px) scale(.92)}.flask:first-child:hover .flask-tooltip,.flask:first-child:focus-visible .flask-tooltip{transform:translateY(0) scale(1)}
+	.flask:last-child .flask-tooltip{left:auto;right:-16px;transform:translateY(-8px) scale(.92)}.flask:last-child:hover .flask-tooltip,.flask:last-child:focus-visible .flask-tooltip{transform:translateY(0) scale(1)}
+	@keyframes potion-wave{to{transform:translateX(-50%)}}@keyframes potion-bubble{to{transform:translateY(-31px);opacity:0}}@keyframes potion-aura{to{transform:translateY(-30px) scale(1.5);opacity:0}}
+	@media(max-width:480px){.flask{width:42px;height:64px}.flask-cork{left:14px}.flask-tooltip{min-width:155px;max-width:180px;padding:10px}}
+	@media(prefers-reduced-motion:reduce){.flask,.flask-cork,.flask-aura,.flask-tooltip,.flask-liquid{transition:none}.flask-liquid svg,.flask-liquid i,.flask-aura{animation:none}}
 </style>
